@@ -295,7 +295,15 @@ class App extends React.Component {
   goBack(){ this.setState(s=>{ const navStack=s.navStack.slice(); const screen=navStack.pop()||'store'; return { screen, navStack }; }); }
   openQr(){ this.setState({ qrOpen:true }); }
   closeQr(){ this.setState({ qrOpen:false }); }
-  logout(){ clearTimeout(this._splashT); this.setState({ screen:'login', user:'', guest:false, phone:'', otp:'', cart:[], name:'', applyRewards:false, qrOpen:false, navStack:[] }); }
+  logout(){
+    clearTimeout(this._splashT);
+    try{
+      localStorage.removeItem('lune_profile');
+      localStorage.removeItem('lune_saved_card');
+      localStorage.removeItem('lune_order_history');
+    }catch(e){ /* localStorage unavailable */ }
+    this.setState({ screen:'login', user:'', guest:false, phone:'', otp:'', cart:[], name:'', applyRewards:false, qrOpen:false, navStack:[], firstName:'', lastName:'', dobDay:'', dobMonth:'', dobYear:'', rewards:0, memberSince:null, orderHistory:[], fav:{}, savedCard:null, useNewCard:false });
+  }
   qrSrc(){
     if(this._qr) return this._qr;
     const N=25, cell=8, q=2, size=(N+2*q)*cell;
