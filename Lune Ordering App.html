@@ -165,6 +165,36 @@ const MENU = {
 };
 const CATS = [['specials','MONTHLY SPECIALS'],['classics','CLASSICS'],['boxes','BOXES'],['coffee','COFFEE'],['drinks','DRINKS'],['retail','RETAIL']];
 const CAT_LABEL = Object.fromEntries(CATS);
+const ITEM_ILLUSTRATIONS = {
+  traditional: (
+    <svg viewBox="0 0 64 64" width="100%" height="100%" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M16 42C11 32 13 18 26 11C21 18 20 27 24 35C29 45 40 49 50 44C44 53 26 56 16 42Z"/>
+      <path d="M21 23C25 25 29 29 31 34"/>
+      <path d="M26 31C30 33 34 37 36 41"/>
+      <path d="M32 37C36 39 40 42 42 45"/>
+    </svg>
+  ),
+  painchoc: (
+    <svg viewBox="0 0 64 64" width="100%" height="100%" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="10" y="19" width="44" height="27" rx="11"/>
+      <path d="M25 24V41"/>
+      <path d="M39 24V41"/>
+    </svg>
+  ),
+  kouign: (
+    <svg viewBox="0 0 64 64" width="100%" height="100%" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="32" cy="32" r="21"/>
+      <path d="M32 11V21M53 32H43M32 53V43M11 32H21M46.8 17.2L39.8 24.2M46.8 46.8L39.8 39.8M17.2 46.8L24.2 39.8M17.2 17.2L24.2 24.2"/>
+      <circle cx="32" cy="32" r="8"/>
+    </svg>
+  ),
+  morning: (
+    <svg viewBox="0 0 64 64" width="100%" height="100%" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="32" cy="32" r="21"/>
+      <path d="M32 32C32 27 36 24 40 26C44 28 45 34 41 37C36 40 30 37 29 31C28 24 34 19 41 21"/>
+    </svg>
+  ),
+};
 const DRINK_IDS = [...MENU.coffee, ...MENU.drinks].map(d=>d.id);
 const MILK_UP = 0.6;
 const money = n => '$' + n.toFixed(2);
@@ -517,10 +547,19 @@ class App extends React.Component {
   imgEl(it, style){
     return <img src={it.img} alt={it.name} className="lune-photo" style={Object.assign({ width:'100%', height:'100%', objectFit:'cover', display:'block' }, style||{})}/>;
   }
-  thumbEl(it){
-    if(it && it.img) return this.imgEl(it);
+  thumbEl(it, style){
+    if(it && it.img) return this.imgEl(it, style);
+    const base = Object.assign({ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center' }, style||{});
+    const illo = it && ITEM_ILLUSTRATIONS[it.id];
+    if(illo){
+      return (
+        <div className="grid-thumb-fallback" style={Object.assign({ background:'#efe6d8', color:'#8a5a3a' }, base)}>
+          <div style={{ width:'56%', height:'56%' }}>{illo}</div>
+        </div>
+      );
+    }
     return (
-      <div className="grid-thumb-fallback" style={{ width:'100%', height:'100%', background:'#0b0805', display:'flex', alignItems:'center', justifyContent:'center' }}>
+      <div className="grid-thumb-fallback" style={Object.assign({ background:'#0b0805' }, base)}>
         <img src={IMG('lune-rocket-white.png')} alt="" style={{ width:'62%', height:'62%', objectFit:'contain', display:'block' }}/>
       </div>
     );
@@ -1042,9 +1081,9 @@ class App extends React.Component {
               <div style={{position:'absolute', top:0, bottom:0, left:0, right:0, zIndex:4, display:'flex', alignItems:'center', justifyContent:'center'}}>
                 <div style={{position:'relative', width:224}}>
                   <div style={{position:'absolute', left:'50%', bottom:-26, transform:'translateX(-50%)', width:150, height:26, background:'radial-gradient(ellipse at center, rgba(0,0,0,0.5), transparent 72%)', filter:'blur(3px)'}}></div>
-                  {a.img
-                    ? this.imgEl(a, { width:224, height:224, borderRadius:18, boxShadow:'0 30px 60px -24px rgba(0,0,0,0.7)' })
-                    : <div style={{width:224, height:224, borderRadius:18, boxShadow:'0 30px 60px -24px rgba(0,0,0,0.7)', background:'#3a2a1c', display:'flex', alignItems:'center', justifyContent:'center'}}><img src={IMG('lune-rocket-white.png')} alt="" style={{width:'50%', height:'50%', objectFit:'contain'}}/></div>}
+                  <div style={{width:224, height:224, borderRadius:18, overflow:'hidden', boxShadow:'0 30px 60px -24px rgba(0,0,0,0.7)'}}>
+                    {this.thumbEl(a)}
+                  </div>
                 </div>
               </div>
 
