@@ -235,7 +235,7 @@ class App extends React.Component {
     savedCard:null, useNewCard:false, saveCard:true,
     cardNumber:'', cardExpiry:'', cardCvc:'', cardName:'', cardErrors:{},
     lastName:'', firstName:'', dobDay:'', dobMonth:'', dobYear:'', signupReturnTo:'store', lastEarned:0, memberSince:null,
-    orderHistory:[], menuView:'list',
+    orderHistory:[], menuView:'grid',
   };
 
   componentWillUnmount(){ clearTimeout(this._toast); clearTimeout(this._k1); clearTimeout(this._k2); clearTimeout(this._otpT); clearTimeout(this._splashT); clearTimeout(this._launchT); document.removeEventListener('keydown', this._onKeyActivate); }
