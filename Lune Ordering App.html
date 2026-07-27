@@ -231,7 +231,7 @@ class App extends React.Component {
     cart:[], name:'', tip:0, tipKey:'0', orderNo:null,
     toast:null, trackStep:0, fav:{}, featureIdx:0,
     user:'', guest:false, phone:'', otp:'', rewards:0, applyRewards:false,
-    wallet:0, qrOpen:false, menuScrolled:false, prevScreen:'store', greetIdx:0, reorderShown:true, tabIndicator:null,
+    wallet:0, qrOpen:false, menuScrolled:false, navStack:[], greetIdx:0, reorderShown:true, tabIndicator:null,
     savedCard:null, useNewCard:false, saveCard:true,
     cardNumber:'', cardExpiry:'', cardCvc:'', cardName:'', cardErrors:{},
     lastName:'', firstName:'', dobDay:'', dobMonth:'', dobYear:'', signupReturnTo:'store', lastEarned:0, memberSince:null,
@@ -288,10 +288,10 @@ class App extends React.Component {
 
   toggleReorder(){ this.setState({ reorderShown:!this.state.reorderShown }); }
   onMenuScroll(e){ const on=e.target.scrollTop>28; if(on!==this.state.menuScrolled) this.setState({ menuScrolled:on }); }
-  goBack(){ this.setState({ screen:this.state.prevScreen||'store' }); }
+  goBack(){ this.setState(s=>{ const navStack=s.navStack.slice(); const screen=navStack.pop()||'store'; return { screen, navStack }; }); }
   openQr(){ this.setState({ qrOpen:true }); }
   closeQr(){ this.setState({ qrOpen:false }); }
-  logout(){ clearTimeout(this._splashT); this.setState({ screen:'login', user:'', guest:false, phone:'', otp:'', cart:[], name:'', applyRewards:false, qrOpen:false }); }
+  logout(){ clearTimeout(this._splashT); this.setState({ screen:'login', user:'', guest:false, phone:'', otp:'', cart:[], name:'', applyRewards:false, qrOpen:false, navStack:[] }); }
   qrSrc(){
     if(this._qr) return this._qr;
     const N=25, cell=8, q=2, size=(N+2*q)*cell;
@@ -402,7 +402,7 @@ class App extends React.Component {
   reorderAdd(row){ const item=this._findItem(row.id); if(item) this.addLine(item, row.qty||1, row.size||'Regular', row.temp||'Hot', row.milk||'Full cream'); }
   _findItem(id){ for(const k in MENU){ const f=MENU[k].find(x=>x.id===id); if(f) return f; } return null; }
 
-  go(screen){ this.setState(s=>{ const p={ prevScreen:s.screen, screen }; if(screen==='menu') p.menuScrolled=false; if(screen==='store') p.greetIdx=Math.floor(Math.random()*GREETINGS.length); return p; }); }
+  go(screen){ this.setState(s=>{ const p={ navStack:[...s.navStack, s.screen], screen }; if(screen==='menu') p.menuScrolled=false; if(screen==='store') p.greetIdx=Math.floor(Math.random()*GREETINGS.length); return p; }); }
   showToast(msg){ clearTimeout(this._toast); this.setState({ toast:msg }); this._toast=setTimeout(()=>this.setState({ toast:null }), 1700); }
 
   unitPrice(item, size, milk){
@@ -540,7 +540,7 @@ class App extends React.Component {
   }
   reset(){
     clearTimeout(this._k1); clearTimeout(this._k2); clearTimeout(this._launchT);
-    this.setState({ screen:'store', category:'specials', store:null, pickupMode:'asap', day:'Today', time:'8:00', active:null, qty:1, size:'Regular', temp:'Hot', milk:'Full cream', cart:[], name:this.state.user||'', tip:0, tipKey:'0', orderNo:null, toast:null, trackStep:0, applyRewards:false, featureIdx:0, useNewCard:false, cardNumber:'', cardExpiry:'', cardCvc:'', cardName:'', cardErrors:{} });
+    this.setState({ screen:'store', category:'specials', store:null, pickupMode:'asap', day:'Today', time:'8:00', active:null, qty:1, size:'Regular', temp:'Hot', milk:'Full cream', cart:[], name:this.state.user||'', tip:0, tipKey:'0', orderNo:null, toast:null, trackStep:0, applyRewards:false, featureIdx:0, useNewCard:false, cardNumber:'', cardExpiry:'', cardCvc:'', cardName:'', cardErrors:{}, navStack:[] });
   }
 
   chip(active){
