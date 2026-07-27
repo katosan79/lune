@@ -26,6 +26,7 @@
   @keyframes lune-img-in { from { opacity:0; } to { opacity:1; } }
   @keyframes lune-enter { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
   @keyframes lune-pop { 0% { opacity:0; transform:scale(.92);} 60%{ transform:scale(1.02);} 100%{ opacity:1; transform:scale(1);} }
+  @keyframes lune-heart-pop { 0% { transform:scale(1);} 35%{ transform:scale(1.35);} 60%{ transform:scale(0.92);} 100%{ transform:scale(1);} }
   @keyframes lune-toast { 0%{opacity:0; transform:translateY(14px);} 12%{opacity:1; transform:none;} 84%{opacity:1; transform:none;} 100%{opacity:0; transform:translateY(14px);} }
   @keyframes lune-pulse { 0%,100%{ transform:scale(1); box-shadow:0 0 0 0 rgba(150,110,70,0.5);} 50%{ transform:scale(1.18); box-shadow:0 0 16px 3px rgba(150,110,70,0.7);} }
   @keyframes lune-twinkle { 0%,100%{opacity:.25;} 50%{opacity:1;} }
@@ -200,9 +201,12 @@ const MILK_UP = 0.6;
 const money = n => '$' + n.toFixed(2);
 const priceStr = p => p > 0 ? money(p) : 'FREE';
 const GREETINGS = ["Hey {n}","G'day {n}","Morning, {n}","Welcome back, {n}","Good to see you, {n}","Look who it is — {n}","The usual, {n}?","Fancy seeing you, {n}"];
-const LAST_ORDER = [
-  { id:'almond', qty:1 },
-  { id:'latte', qty:1, milk:'Full cream' },
+const STORES = [
+  { key:'fitzroy', name:'Fitzroy', addr:'119 ROSE ST, FITZROY', dist:'1.2 KM', status:'OPEN TILL 2PM' },
+  { key:'cbd', name:'Melbourne CBD', addr:'RUSSELL ST & FLINDERS LN', dist:'2.9 KM', status:'OPEN TILL 3PM' },
+  { key:'hawthorn', name:'Hawthorn', addr:'GLENFERRIE RD, HAWTHORN', dist:'6.1 KM', status:'OPEN TILL 3PM' },
+  { key:'stkilda', name:'St Kilda', addr:'ACLAND ST, ST KILDA', dist:'7.4 KM', status:'OPEN TILL 3PM' },
+  { key:'brisbane', name:'Brisbane CBD', addr:'QUEEN ST, BRISBANE', dist:'1,370 KM', status:'OPEN TILL 2PM' },
 ];
 const DAYS = ['Today','Fri 25','Sat 26','Sun 27','Mon 28','Tue 29'];
 const TIMES = ['8:00','8:30','9:00','9:30','10:00','10:30','11:00','11:30','12:00','12:30'];
@@ -357,6 +361,8 @@ class App extends React.Component {
       const item = this._findItem(row.id);
       if(item) this.addLine(item, row.qty||1, 'Regular', 'Hot', row.milk||'Full cream', true);
     });
+    const matchedStore = STORES.find(st=>st.name===order.store);
+    if(matchedStore) this.setState({ store: matchedStore });
     this.showToast('Added order to bag');
     this.go('bag');
   }
@@ -577,13 +583,7 @@ class App extends React.Component {
 
   render(){
     const s = this.state;
-    const storeData = [
-      { key:'fitzroy', name:'Fitzroy', addr:'119 ROSE ST, FITZROY', dist:'1.2 KM', status:'OPEN TILL 2PM' },
-      { key:'cbd', name:'Melbourne CBD', addr:'RUSSELL ST & FLINDERS LN', dist:'2.9 KM', status:'OPEN TILL 3PM' },
-      { key:'hawthorn', name:'Hawthorn', addr:'GLENFERRIE RD, HAWTHORN', dist:'6.1 KM', status:'OPEN TILL 3PM' },
-      { key:'stkilda', name:'St Kilda', addr:'ACLAND ST, ST KILDA', dist:'7.4 KM', status:'OPEN TILL 3PM' },
-      { key:'brisbane', name:'Brisbane CBD', addr:'QUEEN ST, BRISBANE', dist:'1,370 KM', status:'OPEN TILL 2PM' },
-    ].map(st=>({ ...st, select:()=>this.setState({ store:st, screen:'menu' }) }));
+    const storeData = STORES.map(st=>({ ...st, select:()=>this.setState({ store:st, screen:'menu' }) }));
     const nearest = storeData[0];
     const others = storeData.slice(1);
     const store = s.store || nearest;
@@ -659,7 +659,7 @@ class App extends React.Component {
                       <div key={i} onClick={d==='' ? undefined : ()=>onKey(d)} className={d==='' ? '' : 'keypad-key'} style={{height:52, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'JetBrains Mono',monospace", fontSize:22, borderRadius:14, cursor: d==='' ? 'default' : 'pointer', background: d==='' ? 'transparent' : 'rgba(255,255,255,0.06)', color:'#f2ede6'}}>{d}</div>
                     ))}
                   </div>
-                  <div className="clickable btn-phone-submit" onClick={()=>this.submitPhone()} style={{textAlign:'center', background: phoneReady ? '#f2ede6' : 'rgba(255,255,255,0.10)', color: phoneReady ? '#17120d' : '#6b6156', borderRadius:14, padding:17, fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer'}}>SEND CODE →</div>
+                  <div className="clickable magnetic-btn btn-phone-submit" onClick={()=>this.submitPhone()} onMouseMove={(e)=>this.magnetic(e)} onMouseLeave={(e)=>this.magneticReset(e)} style={{textAlign:'center', background: phoneReady ? '#f2ede6' : 'rgba(255,255,255,0.10)', color: phoneReady ? '#17120d' : '#6b6156', borderRadius:14, padding:17, fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer'}}>SEND CODE →</div>
                   <div className="clickable link-muted" onClick={()=>this.continueGuest()} style={{textAlign:'center', marginTop:14, fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:'#9a8f80', cursor:'pointer'}}>CONTINUE AS GUEST</div>
                 </div>
               </div>
@@ -859,7 +859,8 @@ class App extends React.Component {
               key:it.id, item:it, name:it.name, meta:it.meta, priceStr:priceStr(it.price), inDelay: (Math.min(i,9)*45)+'ms',
               open:()=>this.openItem(it), add:()=>this.quickAdd(it),
             }));
-            const reorderItems = LAST_ORDER.map(row=>{ const it=this._findItem(row.id); return { key:row.id, name: it?it.name:'', meta: it?it.meta:'', thumb:this.thumbEl(it), add:()=>this.reorderAdd(row) }; });
+            const lastOrderItems = (isMember && s.orderHistory.length>0) ? s.orderHistory[0].items : [];
+            const reorderItems = lastOrderItems.map(row=>{ const it=this._findItem(row.id); return { key:row.id, name: it?it.name:'', meta: it?it.meta:'', thumb:this.thumbEl(it), add:()=>this.reorderAdd(row) }; });
             const showReorder = isMember && reorderItems.length>0;
             const menuHeadPadTop = ms ? 30 : 42;
             const menuTitleSize = ms ? 17 : 21;
@@ -975,7 +976,7 @@ class App extends React.Component {
                       <div key={row.key} className="clickable menu-grid-card" onClick={row.open} style={{cursor:'pointer', animation:'lune-fade-up .5s cubic-bezier(.16,.7,.2,1) both', animationDelay:row.inDelay}}>
                         <div style={{position:'relative', width:'100%', aspectRatio:'1', borderRadius:14, overflow:'hidden', background:'#efece6'}}>
                           {this.thumbEl(row.item)}
-                          <span className="clickable" onClick={(e)=>{ e.stopPropagation(); this.toggleFavId(row.item.id); }} style={{position:'absolute', top:8, right:8, width:28, height:28, borderRadius:'50%', background:'rgba(255,255,255,0.85)', backdropFilter:'blur(4px)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, color: s.fav[row.item.id] ? '#e07a5f' : '#8a8375'}}>{s.fav[row.item.id] ? '♥' : '♡'}</span>
+                          <span className="clickable" onClick={(e)=>{ e.stopPropagation(); this.toggleFavId(row.item.id); }} style={{position:'absolute', top:8, right:8, width:28, height:28, borderRadius:'50%', background:'rgba(255,255,255,0.85)', backdropFilter:'blur(4px)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, color: s.fav[row.item.id] ? '#e07a5f' : '#8a8375', animation: s.fav[row.item.id] ? 'lune-heart-pop .4s cubic-bezier(.34,1.56,.64,1) both' : 'none'}}>{s.fav[row.item.id] ? '♥' : '♡'}</span>
                           <div className="clickable plus-btn-sm" onClick={(e)=>{ e.stopPropagation(); row.add(); }} style={{position:'absolute', bottom:8, right:8, width:30, height:30, background:'rgba(20,20,20,0.85)', backdropFilter:'blur(6px)', color:'#f4f4f2', display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, borderRadius:8}}>+</div>
                         </div>
                         <div style={{marginTop:10}}>
@@ -992,7 +993,7 @@ class App extends React.Component {
                       <div className="clickable item-row-main" onClick={row.open} style={{display:'flex', gap:14, alignItems:'center', cursor:'pointer', flex:1}}>
                         <div style={{width:54, height:54, flexShrink:0, borderRadius:12, overflow:'hidden', background:'#efece6', display:'flex', alignItems:'center', justifyContent:'center', position:'relative'}}>
                           {this.thumbEl(row.item)}
-                          <span className="clickable" onClick={(e)=>{ e.stopPropagation(); this.toggleFavId(row.item.id); }} style={{position:'absolute', top:2, right:2, width:20, height:20, borderRadius:'50%', background:'rgba(255,255,255,0.85)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, color: s.fav[row.item.id] ? '#e07a5f' : '#8a8375'}}>{s.fav[row.item.id] ? '♥' : '♡'}</span>
+                          <span className="clickable" onClick={(e)=>{ e.stopPropagation(); this.toggleFavId(row.item.id); }} style={{position:'absolute', top:2, right:2, width:20, height:20, borderRadius:'50%', background:'rgba(255,255,255,0.85)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, color: s.fav[row.item.id] ? '#e07a5f' : '#8a8375', animation: s.fav[row.item.id] ? 'lune-heart-pop .4s cubic-bezier(.34,1.56,.64,1) both' : 'none'}}>{s.fav[row.item.id] ? '♥' : '♡'}</span>
                         </div>
                         <div>
                           <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:16}}>{row.name}</div>
@@ -1054,7 +1055,7 @@ class App extends React.Component {
                 </div>
               </div>
               <div style={{padding:'14px 24px 26px'}}>
-                <div className="clickable btn-dark" onClick={()=>this.go('menu')} style={{textAlign:'center', background:'#141414', color:'#f4f4f2', borderRadius:14, padding:17, fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer'}}>VIEW MENU · {pickupShort} →</div>
+                <div className="clickable magnetic-btn btn-dark" onClick={()=>this.go('menu')} onMouseMove={(e)=>this.magnetic(e)} onMouseLeave={(e)=>this.magneticReset(e)} style={{textAlign:'center', background:'#141414', color:'#f4f4f2', borderRadius:14, padding:17, fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer'}}>VIEW MENU · {pickupShort} →</div>
               </div>
             </div>
           }
@@ -1079,7 +1080,7 @@ class App extends React.Component {
 
               <div style={{position:'absolute', top:44, left:20, right:20, zIndex:12, display:'flex', justifyContent:'space-between'}}>
                 <span className="clickable icon-btn-glass" onClick={()=>this.go('menu')} style={{width:40, height:40, borderRadius:'50%', background:'rgba(255,255,255,0.10)', backdropFilter:'blur(14px)', border:'1px solid rgba(255,255,255,0.16)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, cursor:'pointer'}}>‹</span>
-                <span className="clickable icon-btn-glass" onClick={()=>this.toggleFav()} style={{width:40, height:40, borderRadius:'50%', background:'rgba(255,255,255,0.10)', backdropFilter:'blur(14px)', border:'1px solid rgba(255,255,255,0.16)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, cursor:'pointer', color: activeIsFav ? '#e07a5f' : '#f2ede6'}}>{activeIsFav ? '♥' : '♡'}</span>
+                <span className="clickable icon-btn-glass" onClick={()=>this.toggleFav()} style={{width:40, height:40, borderRadius:'50%', background:'rgba(255,255,255,0.10)', backdropFilter:'blur(14px)', border:'1px solid rgba(255,255,255,0.16)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, cursor:'pointer', color: activeIsFav ? '#e07a5f' : '#f2ede6', animation: activeIsFav ? 'lune-heart-pop .4s cubic-bezier(.34,1.56,.64,1) both' : 'none'}}>{activeIsFav ? '♥' : '♡'}</span>
               </div>
 
               <div style={{position:'absolute', top:98, left:0, right:0, zIndex:6, textAlign:'center', padding:'0 30px'}}>
@@ -1176,7 +1177,7 @@ class App extends React.Component {
                 </div>
               </div>
               <div style={{padding:'14px 24px 26px'}}>
-                <div className="clickable btn-dark" onClick={()=>this.go('pickup')} style={{display:'flex', justifyContent:'space-between', alignItems:'center', background:'#141414', color:'#f4f4f2', borderRadius:14, padding:'17px 22px', fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer'}}>
+                <div className="clickable magnetic-btn btn-dark" onClick={()=>this.go('pickup')} onMouseMove={(e)=>this.magnetic(e)} onMouseLeave={(e)=>this.magneticReset(e)} style={{display:'flex', justifyContent:'space-between', alignItems:'center', background:'#141414', color:'#f4f4f2', borderRadius:14, padding:'17px 22px', fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer'}}>
                   <span>CHECKOUT</span><span>{money(sub)} →</span>
                 </div>
               </div>
@@ -1366,7 +1367,7 @@ class App extends React.Component {
                 </div>
               </div>
               <div style={{position:'relative', display:'flex', flexDirection:'column', gap:10}}>
-                <div className="clickable btn-accent" onClick={()=>this.startTracking()} style={{textAlign:'center', background:ACC, color:'#f4f4f2', borderRadius:14, padding:16, fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer'}}>TRACK ORDER →</div>
+                <div className="clickable magnetic-btn btn-accent" onClick={()=>this.startTracking()} onMouseMove={(e)=>this.magnetic(e)} onMouseLeave={(e)=>this.magneticReset(e)} style={{textAlign:'center', background:ACC, color:'#f4f4f2', borderRadius:14, padding:16, fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer'}}>TRACK ORDER →</div>
                 <div className="clickable btn-outline" onClick={()=>this.reset()} style={{textAlign:'center', border:'1px solid rgba(255,255,255,0.28)', color:'#f2f1ee', borderRadius:14, padding:16, fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer'}}>START NEW ORDER</div>
               </div>
             </div>
@@ -1455,7 +1456,7 @@ class App extends React.Component {
                 </div>
               </div>
               <div style={{position:'relative', padding:'6px 26px 30px'}}>
-                <div className="clickable btn-accent" onClick={()=>this.go('store')} style={{textAlign:'center', background:ACC, color:'#f4f4f2', borderRadius:14, padding:16, fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer'}}>START AN ORDER →</div>
+                <div className="clickable magnetic-btn btn-accent" onClick={()=>this.go('store')} onMouseMove={(e)=>this.magnetic(e)} onMouseLeave={(e)=>this.magneticReset(e)} style={{textAlign:'center', background:ACC, color:'#f4f4f2', borderRadius:14, padding:16, fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer'}}>START AN ORDER →</div>
               </div>
             </div>
             );
@@ -1465,7 +1466,6 @@ class App extends React.Component {
             const profileRows = [
               { label:'FULL NAME', value:(s.user||'') + (s.lastName? ' '+s.lastName : '') || 'Guest' },
               { label:'MOBILE', value:'+61 '+(s.phone? (s.phone.slice(0,3)+' '+s.phone.slice(3,6)+' '+s.phone.slice(6,9)) : '412 345 678') },
-              { label:'EMAIL', value:(s.user? s.user.toLowerCase():'keith')+'@lune.co' },
               { label:'BIRTHDAY', value:(s.dobDay && s.dobMonth) ? (s.dobDay.padStart(2,'0')+'/'+s.dobMonth.padStart(2,'0')) : 'Not set' },
               { label:'SAVED STORE', value:store.name },
               { label:'DIETARY', value:'None set' },
@@ -1550,7 +1550,7 @@ class App extends React.Component {
                 ) : (
                   <div style={{display:'flex', flexDirection:'column', gap:14, marginTop:24}}>
                     {s.orderHistory.map((order,i)=>(
-                      <div key={order.orderNo+i} style={{border:'1px solid rgba(255,255,255,0.14)', borderRadius:16, padding:'16px 18px', background:'rgba(255,255,255,0.04)'}}>
+                      <div key={order.orderNo+i} style={{border:'1px solid rgba(255,255,255,0.14)', borderRadius:16, padding:'16px 18px', background:'rgba(255,255,255,0.04)', animation:'lune-fade-up .5s cubic-bezier(.16,.7,.2,1) both', animationDelay:(Math.min(i,9)*45)+'ms'}}>
                         <div style={{display:'flex', justifyContent:'space-between', alignItems:'baseline'}}>
                           <span style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:15}}>{order.store}</span>
                           <span style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#9a8f80'}}>{order.dateLabel}</span>
@@ -1586,8 +1586,8 @@ class App extends React.Component {
                   <p style={{fontSize:13, lineHeight:1.6, color:'#c3b8ab', marginTop:20, maxWidth:260}}>No favourites yet — tap the heart on any item to save it here.</p>
                 ) : (
                   <div style={{display:'flex', flexDirection:'column', gap:14, marginTop:24}}>
-                    {favItems.map(it=>(
-                      <div key={it.id} style={{border:'1px solid rgba(255,255,255,0.14)', borderRadius:16, padding:'14px 16px', background:'rgba(255,255,255,0.04)', display:'flex', gap:14, alignItems:'center'}}>
+                    {favItems.map((it,i)=>(
+                      <div key={it.id} style={{border:'1px solid rgba(255,255,255,0.14)', borderRadius:16, padding:'14px 16px', background:'rgba(255,255,255,0.04)', display:'flex', gap:14, alignItems:'center', animation:'lune-fade-up .5s cubic-bezier(.16,.7,.2,1) both', animationDelay:(Math.min(i,9)*45)+'ms'}}>
                         <div style={{width:54, height:54, flexShrink:0, borderRadius:12, overflow:'hidden', background:'#efece6'}}>{this.thumbEl(it)}</div>
                         <div style={{flex:1, minWidth:0}}>
                           <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:15}}>{it.name}</div>
