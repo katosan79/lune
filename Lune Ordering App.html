@@ -67,6 +67,10 @@
   .btn-add-bag:hover{filter:brightness(1.06); transform:translateY(-1px)}
   .qty-box:hover{border-color:#141414 !important}
   .rewards-row:hover{border-color:#141414 !important}
+  .rewards-signup-card:hover{border-color:#141414 !important; background:#f7efe0 !important}
+  .view-toggle-btn:hover{color:#141414 !important}
+  .menu-grid-card .lune-photo, .menu-grid-card .grid-thumb-fallback{transition: transform .5s cubic-bezier(.34,1.56,.64,1);}
+  .menu-grid-card:hover .lune-photo, .menu-grid-card:hover .grid-thumb-fallback{transform: scale(1.06);}
   .qr-row:hover{border-color:rgba(224,201,168,0.6) !important; background:rgba(255,255,255,0.08) !important}
   .rewards-card:hover{border-color:rgba(224,201,168,0.6) !important}
   .keypad-key:hover{background:rgba(255,255,255,0.14)}
@@ -172,6 +176,7 @@ const LAST_ORDER = [
 ];
 const DAYS = ['Today','Fri 25','Sat 26','Sun 27','Mon 28','Tue 29'];
 const TIMES = ['8:00','8:30','9:00','9:30','10:00','10:30','11:00','11:30','12:00','12:30'];
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
 function Starfield() {
   const layer = (grad, size, anim) => (
@@ -195,8 +200,12 @@ class App extends React.Component {
     active:null, qty:1, size:'Regular', temp:'Hot', milk:'Full cream',
     cart:[], name:'', tip:0, tipKey:'0', orderNo:null,
     toast:null, trackStep:0, fav:{}, featureIdx:0,
-    user:'', guest:false, phone:'', otp:'', rewards:4.5, applyRewards:false,
+    user:'', guest:false, phone:'', otp:'', rewards:0, applyRewards:false,
     wallet:0, qrOpen:false, menuScrolled:false, prevScreen:'store', greetIdx:0, reorderShown:true, tabIndicator:null,
+    savedCard:null, useNewCard:false, saveCard:true,
+    cardNumber:'', cardExpiry:'', cardCvc:'', cardName:'', cardErrors:{},
+    lastName:'', firstName:'', dobDay:'', dobMonth:'', dobYear:'', signupReturnTo:'store', lastEarned:0, memberSince:null,
+    orderHistory:[], menuView:'list',
   };
 
   componentWillUnmount(){ clearTimeout(this._toast); clearTimeout(this._k1); clearTimeout(this._k2); clearTimeout(this._otpT); clearTimeout(this._splashT); clearTimeout(this._launchT); document.removeEventListener('keydown', this._onKeyActivate); }
@@ -210,6 +219,10 @@ class App extends React.Component {
     };
     document.addEventListener('keydown', this._onKeyActivate);
     this._a11yPass();
+    try {
+      const raw = localStorage.getItem('lune_saved_card');
+      if (raw) this.setState({ savedCard: JSON.parse(raw) });
+    } catch(e){ /* localStorage unavailable or corrupt entry — proceed without a saved card */ }
   }
   componentDidUpdate(){
     this._a11yPass();
@@ -271,8 +284,79 @@ class App extends React.Component {
   submitPhone(){ if(this.state.phone.length>=9) this.setState({ screen:'otp', otp:'' }); }
   pressOtp(k){ let o=this.state.otp; if(k==='⌫') o=o.slice(0,-1); else if(o.length<4) o=o+k; this.setState({ otp:o }); if(o.length===4){ clearTimeout(this._otpT); this._otpT=setTimeout(()=>this.loginSuccess(), 480); } }
   resendOtp(){ this.showToast('New code sent'); }
-  loginSuccess(){ this.setState({ screen:'store', user:'Keith', guest:false, name:'Keith', otp:'', greetIdx:Math.floor(Math.random()*GREETINGS.length) }); }
-  continueGuest(){ this.setState({ screen:'store', guest:true, user:'', name:'' }); }
+  loadProfile(){
+    try{ const raw = localStorage.getItem('lune_profile'); if(raw) return JSON.parse(raw); }catch(e){ /* localStorage unavailable or corrupt entry */ }
+    return null;
+  }
+  loadOrderHistory(){
+    try{ const raw = localStorage.getItem('lune_order_history'); if(raw) return JSON.parse(raw); }catch(e){ /* localStorage unavailable or corrupt entry */ }
+    return [];
+  }
+  seedOrderHistory(){
+    const dayMs = 86400000;
+    const label = (daysAgo)=> new Date(Date.now()-daysAgo*dayMs).toLocaleDateString('en-AU',{weekday:'short', day:'numeric', month:'short'});
+    const priceOf = (id)=>{ const it=this._findItem(id); return it?it.price:0; };
+    const mk = (daysAgo, storeName, pickup, items)=>{
+      const subtotal = items.reduce((a,r)=>{
+        const milkUp = (r.milk && r.milk!=='Full cream') ? MILK_UP*(r.qty||1) : 0;
+        return a + priceOf(r.id)*(r.qty||1) + milkUp;
+      },0);
+      return {
+        orderNo:'LN-'+Math.floor(1000+Math.random()*9000), dateLabel:label(daysAgo), store:storeName, pickup, items,
+        total:Math.round(subtotal*100)/100, earned:Math.round(subtotal*0.05*100)/100,
+      };
+    };
+    return [
+      mk(4, 'Fitzroy', 'ASAP ~15min', [{id:'almond',qty:1},{id:'latte',qty:1,milk:'Oat'}]),
+      mk(11, 'Fitzroy', 'ASAP ~15min', [{id:'box6trad',qty:1}]),
+      mk(19, 'Melbourne CBD', 'Sat 10:00 am', [{id:'everything',qty:2},{id:'flatwhite',qty:1}]),
+    ];
+  }
+  reorderOrder(order){
+    order.items.forEach(row=>{
+      const item = this._findItem(row.id);
+      if(item) this.addLine(item, row.qty||1, 'Regular', 'Hot', row.milk||'Full cream', true);
+    });
+    this.showToast('Added order to bag');
+    this.go('bag');
+  }
+  loginSuccess(){
+    const profile = this.loadProfile();
+    if(profile){
+      this.setState({ screen:this.state.signupReturnTo||'store', user:profile.firstName, lastName:profile.lastName||'', guest:false, rewards:profile.rewards||0, otp:'', name:profile.firstName, signupReturnTo:'store', memberSince:profile.memberSince||null, orderHistory:this.loadOrderHistory(), greetIdx:Math.floor(Math.random()*GREETINGS.length) });
+    } else {
+      this.setState({ screen:'signupFirst', guest:false, otp:'' });
+    }
+  }
+  continueGuest(){ this.setState({ screen:this.state.signupReturnTo||'store', guest:true, user:'', name:'', signupReturnTo:'store' }); }
+  startSignupFromCheckout(){ this.setState({ signupReturnTo:'pickup', screen:'login' }); }
+  setFirstName(e){ this.setState({ firstName:e.target.value }); }
+  setLastName(e){ this.setState({ lastName:e.target.value }); }
+  setDobDay(e){ this.setState({ dobDay:e.target.value.replace(/[^0-9]/g,'').slice(0,2) }); }
+  setDobMonth(e){ this.setState({ dobMonth:e.target.value }); }
+  setDobYear(e){ this.setState({ dobYear:e.target.value.replace(/[^0-9]/g,'').slice(0,4) }); }
+  submitFirstName(){ if(!this.state.firstName.trim()) { this.showToast('Enter your first name'); return; } this.setState({ screen:'signupLast' }); }
+  submitLastName(){ if(!this.state.lastName.trim()) { this.showToast('Enter your last name'); return; } this.setState({ screen:'signupDob' }); }
+  validateDob(){
+    const d = parseInt(this.state.dobDay,10), m = parseInt(this.state.dobMonth,10), y = parseInt(this.state.dobYear,10);
+    if(!d || !m || !y) return false;
+    if(y<1920 || y>new Date().getFullYear()) return false;
+    const dt = new Date(y, m-1, d);
+    return dt.getFullYear()===y && dt.getMonth()===m-1 && dt.getDate()===d;
+  }
+  submitDob(){
+    if(!this.validateDob()){ this.showToast('Enter a valid birthday'); return; }
+    const dob = String(this.state.dobDay).padStart(2,'0')+'/'+String(this.state.dobMonth).padStart(2,'0')+'/'+this.state.dobYear;
+    const profile = { phone:this.state.phone, firstName:this.state.firstName.trim(), lastName:this.state.lastName.trim(), dob, memberSince:new Date().getFullYear(), rewards:0 };
+    try{ localStorage.setItem('lune_profile', JSON.stringify(profile)); }catch(e){ /* localStorage unavailable */ }
+    const seededHistory = this.seedOrderHistory();
+    try{ localStorage.setItem('lune_order_history', JSON.stringify(seededHistory)); }catch(e){ /* localStorage unavailable */ }
+    this.setState({ user:profile.firstName, lastName:profile.lastName, name:profile.firstName, guest:false, rewards:0, memberSince:profile.memberSince, orderHistory:seededHistory, screen:'signupDone' });
+  }
+  finishSignup(){
+    const dest = this.state.signupReturnTo || 'store';
+    this.setState({ screen:dest, signupReturnTo:'store', greetIdx:Math.floor(Math.random()*GREETINGS.length) });
+  }
   toggleRewards(){ this.setState({ applyRewards:!this.state.applyRewards }); }
   appliedRewardsNum(){ const s=this.state; if(s.guest || !s.user || !s.applyRewards) return 0; return Math.min(s.rewards, this.cartTotalNum()+(s.tip||0)); }
   reorderAdd(row){ const item=this._findItem(row.id); if(item) this.addLine(item, row.qty||1, row.size||'Regular', row.temp||'Hot', row.milk||'Full cream'); }
@@ -290,15 +374,17 @@ class App extends React.Component {
   openItem(item){ this.setState({ screen:'item', active:item, qty:1, size:'Regular', temp:'Hot', milk:'Full cream' }); }
   quickAdd(item){ if(item.drink && item.milk){ this.openItem(item); return; } this.addLine(item, 1, 'Regular', 'Hot', 'Full cream'); }
   addActive(){ const s=this.state; this.addLine(s.active, s.qty, s.size, s.temp, s.milk); this.setState({ screen:'menu' }); }
-  addLine(item, qty, size, temp, milk){
+  addLine(item, qty, size, temp, milk, silent){
     const key = item.id + '|' + this.variantLabel(item,size,temp,milk);
-    const cart = this.state.cart.slice();
-    const ex = cart.find(l=>l.key===key);
-    if(ex){ ex.qty += qty; } else {
-      cart.push({ key, id:item.id, name:item.name, unit:this.unitPrice(item,size,milk), qty, variant:this.variantLabel(item,size,temp,milk) });
-    }
-    this.setState({ cart });
-    this.showToast('Added ' + item.name);
+    this.setState(prevState => {
+      const cart = prevState.cart.slice();
+      const ex = cart.find(l=>l.key===key);
+      if(ex){ ex.qty += qty; } else {
+        cart.push({ key, id:item.id, name:item.name, unit:this.unitPrice(item,size,milk), qty, variant:this.variantLabel(item,size,temp,milk) });
+      }
+      return { cart };
+    });
+    if(!silent) this.showToast('Added ' + item.name);
   }
   changeLine(key, d){
     let cart = this.state.cart.slice();
@@ -313,10 +399,97 @@ class App extends React.Component {
   cartCountNum(){ return this.state.cart.reduce((a,l)=>a+l.qty,0); }
   payTotalNum(){ return Math.max(0, this.cartTotalNum() + (this.state.tip||0) - this.appliedRewardsNum()); }
 
+  cardBrand(num){
+    const n = (num||'').replace(/\s+/g,'');
+    if(/^4/.test(n)) return 'Visa';
+    if(/^5[1-5]/.test(n) || /^2[2-7]/.test(n)) return 'Mastercard';
+    if(/^3[47]/.test(n)) return 'Amex';
+    return 'Card';
+  }
+  setCardNumber(e){
+    let v = e.target.value.replace(/[^0-9]/g,'').slice(0,16);
+    v = v.replace(/(.{4})/g,'$1 ').trim();
+    this.setState({ cardNumber:v, cardErrors:{...this.state.cardErrors, cardNumber:null} });
+  }
+  setCardExpiry(e){
+    let v = e.target.value.replace(/[^0-9]/g,'').slice(0,4);
+    if(v.length>=3) v = v.slice(0,2)+'/'+v.slice(2);
+    this.setState({ cardExpiry:v, cardErrors:{...this.state.cardErrors, cardExpiry:null} });
+  }
+  setCardCvc(e){
+    const v = e.target.value.replace(/[^0-9]/g,'').slice(0,4);
+    this.setState({ cardCvc:v, cardErrors:{...this.state.cardErrors, cardCvc:null} });
+  }
+  setCardName(e){ this.setState({ cardName:e.target.value, cardErrors:{...this.state.cardErrors, cardName:null} }); }
+  toggleSaveCard(){ this.setState({ saveCard:!this.state.saveCard }); }
+  useNewCardToggle(){ this.setState({ useNewCard:true, cardNumber:'', cardExpiry:'', cardCvc:'', cardName:'', cardErrors:{} }); }
+  useSavedCard(){ this.setState({ useNewCard:false, cardErrors:{} }); }
+  forgetSavedCard(e){
+    if(e && e.stopPropagation) e.stopPropagation();
+    try{ localStorage.removeItem('lune_saved_card'); }catch(err){ /* localStorage unavailable */ }
+    this.setState({ savedCard:null, useNewCard:true });
+  }
+  validateCard(){
+    const errors = {};
+    const digits = this.state.cardNumber.replace(/\s+/g,'');
+    if(digits.length<13 || digits.length>16) errors.cardNumber = 'Enter a valid card number';
+    const m = /^(\d{2})\/(\d{2})$/.exec(this.state.cardExpiry);
+    if(!m) errors.cardExpiry = 'MM/YY';
+    else {
+      const mm = parseInt(m[1],10), yy = parseInt(m[2],10);
+      const now = new Date(), curYY = now.getFullYear()%100, curMM = now.getMonth()+1;
+      if(mm<1||mm>12) errors.cardExpiry = 'Invalid month';
+      else if(yy<curYY || (yy===curYY && mm<curMM)) errors.cardExpiry = 'Card expired';
+    }
+    if(this.state.cardCvc.length<3) errors.cardCvc = 'CVC';
+    if(!this.state.cardName.trim()) errors.cardName = 'Required';
+    return errors;
+  }
+  cardReady(){
+    if(this.state.savedCard && !this.state.useNewCard) return true;
+    return Object.keys(this.validateCard()).length===0;
+  }
   placeOrder(){
     if(this.state.cart.length===0) return;
+    const usingSaved = this.state.savedCard && !this.state.useNewCard;
+    if(!usingSaved){
+      const errors = this.validateCard();
+      if(Object.keys(errors).length>0){ this.setState({ cardErrors: errors }); this.showToast('Check your card details'); return; }
+      if(this.state.saveCard){
+        const digits = this.state.cardNumber.replace(/\s+/g,'');
+        const card = { last4: digits.slice(-4), brand: this.cardBrand(digits), expiry: this.state.cardExpiry, name: this.state.cardName };
+        try{ localStorage.setItem('lune_saved_card', JSON.stringify(card)); }catch(err){ /* localStorage unavailable */ }
+        this.setState({ savedCard: card });
+      }
+    }
+    const isMemberNow = !this.state.guest && !!this.state.user;
+    const burned = this.appliedRewardsNum();
+    const earned = isMemberNow ? Math.round(this.cartTotalNum()*0.05*100)/100 : 0;
+    const orderNo = 'LN-' + Math.floor(1000+Math.random()*9000);
+    const payTotal = this.payTotalNum();
+    if(isMemberNow){
+      const newRewards = Math.max(0, Math.round((this.state.rewards - burned + earned)*100)/100);
+      this.setState({ rewards:newRewards });
+      try{
+        const raw = localStorage.getItem('lune_profile');
+        if(raw){ const p = JSON.parse(raw); p.rewards = newRewards; localStorage.setItem('lune_profile', JSON.stringify(p)); }
+      }catch(e){ /* localStorage unavailable */ }
+      const entry = {
+        orderNo,
+        dateLabel: new Date().toLocaleDateString('en-AU', {weekday:'short', day:'numeric', month:'short'}),
+        store: this.state.store ? this.state.store.name : 'Fitzroy',
+        pickup: this.state.pickupMode==='asap' ? 'ASAP ~15min' : (this.state.day+' '+this.state.time),
+        items: this.state.cart.map(l=>({ id:l.id, qty:l.qty, milk:l.variant || 'Full cream' })),
+        total: payTotal,
+        earned,
+      };
+      const history = [entry, ...this.state.orderHistory];
+      this.setState({ orderHistory: history });
+      try{ localStorage.setItem('lune_order_history', JSON.stringify(history)); }catch(e){ /* localStorage unavailable */ }
+    }
+    this.setState({ useNewCard:false, lastEarned:earned });
     clearTimeout(this._launchT);
-    this.setState({ screen:'launching', orderNo:'LN-' + Math.floor(1000+Math.random()*9000) });
+    this.setState({ screen:'launching', orderNo });
     this._launchT = setTimeout(()=>this.setState({ screen:'confirm' }), 2050);
   }
   startTracking(){
@@ -327,7 +500,7 @@ class App extends React.Component {
   }
   reset(){
     clearTimeout(this._k1); clearTimeout(this._k2); clearTimeout(this._launchT);
-    this.setState({ screen:'store', category:'specials', store:null, pickupMode:'asap', day:'Today', time:'8:00', active:null, qty:1, size:'Regular', temp:'Hot', milk:'Full cream', cart:[], name:this.state.user||'', tip:0, tipKey:'0', orderNo:null, toast:null, trackStep:0, applyRewards:false, featureIdx:0 });
+    this.setState({ screen:'store', category:'specials', store:null, pickupMode:'asap', day:'Today', time:'8:00', active:null, qty:1, size:'Regular', temp:'Hot', milk:'Full cream', cart:[], name:this.state.user||'', tip:0, tipKey:'0', orderNo:null, toast:null, trackStep:0, applyRewards:false, featureIdx:0, useNewCard:false, cardNumber:'', cardExpiry:'', cardCvc:'', cardName:'', cardErrors:{} });
   }
 
   chip(active){
@@ -347,7 +520,7 @@ class App extends React.Component {
   thumbEl(it){
     if(it && it.img) return this.imgEl(it);
     return (
-      <div style={{ width:'100%', height:'100%', background:'#0b0805', display:'flex', alignItems:'center', justifyContent:'center' }}>
+      <div className="grid-thumb-fallback" style={{ width:'100%', height:'100%', background:'#0b0805', display:'flex', alignItems:'center', justifyContent:'center' }}>
         <img src={IMG('lune-rocket-white.png')} alt="" style={{ width:'62%', height:'62%', objectFit:'contain', display:'block' }}/>
       </div>
     );
@@ -372,7 +545,7 @@ class App extends React.Component {
     const isMember = !s.guest && !!s.user;
     const isGuest = s.guest;
     const ms = s.menuScrolled;
-    const darkScreens = ['store','confirm','track','item','splash','login','otp','rewards','profile','launching'].includes(s.screen);
+    const darkScreens = ['store','confirm','track','item','splash','login','otp','rewards','profile','launching','signupFirst','signupLast','signupDob','signupDone','orderHistory'].includes(s.screen);
     const initial = (s.user||'L').trim().charAt(0).toUpperCase();
     const now = new Date().getHours();
     const greetingKicker = now<12 ? 'GOOD MORNING' : (now<17 ? 'GOOD AFTERNOON' : 'GOOD EVENING');
@@ -387,6 +560,9 @@ class App extends React.Component {
     const hasDrink = s.cart.some(l=>DRINK_IDS.includes(l.id));
     const appliedRewards = this.appliedRewardsNum();
     const canPay = s.cart.length>0;
+    const cardOk = this.cardReady();
+    const usingSavedCard = !!(s.savedCard && !s.useNewCard);
+    const cardErr = s.cardErrors || {};
 
     const onKey = s.screen==='otp' ? (k)=>this.pressOtp(k) : (k)=>this.pressPhone(k);
     const keypad = ['1','2','3','4','5','6','7','8','9','','0','⌫'];
@@ -462,6 +638,85 @@ class App extends React.Component {
                     ))}
                   </div>
                 </div>
+              </div>
+            </div>
+          }
+
+          {s.screen==='signupFirst' &&
+            <div style={{height:792, background:'#0b0805', color:'#f2f1ee', display:'flex', flexDirection:'column', padding:'64px 26px 30px', position:'relative', overflow:'hidden', animation:'lune-enter .32s ease both'}}>
+              <Starfield/>
+              <div style={{position:'relative', display:'flex', flexDirection:'column', height:'100%'}}>
+                <div className="clickable link-muted" onClick={()=>this.go('otp')} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'#9a8f80', cursor:'pointer'}}>‹ BACK</div>
+                <img src={IMG('lune-rocket-white.png')} alt="" style={{width:42, height:42, objectFit:'contain', display:'block', marginTop:24}}/>
+                <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, letterSpacing:'0.16em', color:'#9a8f80', marginTop:20}}>STEP 1 OF 3 · CREATE YOUR ACCOUNT</div>
+                <h2 style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:27, letterSpacing:'-0.02em', margin:'10px 0 8px'}}>What's your first name?</h2>
+                <p style={{fontSize:13, lineHeight:1.55, color:'#c3b8ab', margin:0}}>So we know what to call you at the counter.</p>
+                <input value={s.firstName} onChange={(e)=>this.setFirstName(e)} placeholder="First name" autoFocus style={{marginTop:28, width:'100%', border:'1.5px solid rgba(255,255,255,0.16)', borderRadius:12, padding:16, fontFamily:"'JetBrains Mono',monospace", fontSize:16, color:'#f2ede6', background:'rgba(255,255,255,0.06)', outline:'none'}}/>
+                <div style={{marginTop:'auto'}}>
+                  <div className="clickable magnetic-btn" onClick={()=>this.submitFirstName()} onMouseMove={(e)=>this.magnetic(e)} onMouseLeave={(e)=>this.magneticReset(e)} style={{textAlign:'center', background: s.firstName.trim()?'#f2ede6':'rgba(255,255,255,0.10)', color: s.firstName.trim()?'#17120d':'#6b6156', borderRadius:14, padding:17, fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer'}}>CONTINUE →</div>
+                </div>
+              </div>
+            </div>
+          }
+
+          {s.screen==='signupLast' &&
+            <div style={{height:792, background:'#0b0805', color:'#f2f1ee', display:'flex', flexDirection:'column', padding:'64px 26px 30px', position:'relative', overflow:'hidden', animation:'lune-enter .32s ease both'}}>
+              <Starfield/>
+              <div style={{position:'relative', display:'flex', flexDirection:'column', height:'100%'}}>
+                <div className="clickable link-muted" onClick={()=>this.setState({screen:'signupFirst'})} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'#9a8f80', cursor:'pointer'}}>‹ BACK</div>
+                <img src={IMG('lune-rocket-white.png')} alt="" style={{width:42, height:42, objectFit:'contain', display:'block', marginTop:24}}/>
+                <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, letterSpacing:'0.16em', color:'#9a8f80', marginTop:20}}>STEP 2 OF 3 · CREATE YOUR ACCOUNT</div>
+                <h2 style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:27, letterSpacing:'-0.02em', margin:'10px 0 8px'}}>And your last name?</h2>
+                <p style={{fontSize:13, lineHeight:1.55, color:'#c3b8ab', margin:0}}>For your loyalty account and receipts.</p>
+                <input value={s.lastName} onChange={(e)=>this.setLastName(e)} placeholder="Last name" autoFocus style={{marginTop:28, width:'100%', border:'1.5px solid rgba(255,255,255,0.16)', borderRadius:12, padding:16, fontFamily:"'JetBrains Mono',monospace", fontSize:16, color:'#f2ede6', background:'rgba(255,255,255,0.06)', outline:'none'}}/>
+                <div style={{marginTop:'auto'}}>
+                  <div className="clickable magnetic-btn" onClick={()=>this.submitLastName()} onMouseMove={(e)=>this.magnetic(e)} onMouseLeave={(e)=>this.magneticReset(e)} style={{textAlign:'center', background: s.lastName.trim()?'#f2ede6':'rgba(255,255,255,0.10)', color: s.lastName.trim()?'#17120d':'#6b6156', borderRadius:14, padding:17, fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer'}}>CONTINUE →</div>
+                </div>
+              </div>
+            </div>
+          }
+
+          {s.screen==='signupDob' &&
+            <div style={{height:792, background:'#0b0805', color:'#f2f1ee', display:'flex', flexDirection:'column', padding:'64px 26px 30px', position:'relative', overflow:'hidden', animation:'lune-enter .32s ease both'}}>
+              <Starfield/>
+              <div style={{position:'relative', display:'flex', flexDirection:'column', height:'100%'}}>
+                <div className="clickable link-muted" onClick={()=>this.setState({screen:'signupLast'})} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'#9a8f80', cursor:'pointer'}}>‹ BACK</div>
+                <img src={IMG('lune-rocket-white.png')} alt="" style={{width:42, height:42, objectFit:'contain', display:'block', marginTop:24}}/>
+                <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, letterSpacing:'0.16em', color:'#9a8f80', marginTop:20}}>STEP 3 OF 3 · CREATE YOUR ACCOUNT</div>
+                <h2 style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:27, letterSpacing:'-0.02em', margin:'10px 0 8px'}}>When's your birthday?</h2>
+                <p style={{fontSize:13, lineHeight:1.55, color:'#c3b8ab', margin:0}}>We'll send a little something on your special day.</p>
+                <div style={{display:'flex', gap:8, marginTop:28}}>
+                  <input value={s.dobDay} onChange={(e)=>this.setDobDay(e)} placeholder="DD" inputMode="numeric" style={{flex:'0.7 1 0%', width:0, minWidth:0, textAlign:'center', border:'1.5px solid rgba(255,255,255,0.16)', borderRadius:12, padding:'16px 4px', fontFamily:"'JetBrains Mono',monospace", fontSize:16, color:'#f2ede6', background:'rgba(255,255,255,0.06)', outline:'none'}}/>
+                  <select value={s.dobMonth} onChange={(e)=>this.setDobMonth(e)} colorScheme="dark" style={{flex:'2 1 0%', width:0, minWidth:0, textAlign:'center', textAlignLast:'center', border:'1.5px solid rgba(255,255,255,0.16)', borderRadius:12, padding:'16px 4px', fontFamily:"'JetBrains Mono',monospace", fontSize:14, color: s.dobMonth ? '#f2ede6' : '#8a8375', background:'rgba(255,255,255,0.06)', outline:'none'}}>
+                    <option value="" disabled style={{color:'#141414'}}>Month</option>
+                    {MONTHS.map((m,i)=>(
+                      <option key={m} value={String(i+1).padStart(2,'0')} style={{color:'#141414'}}>{m}</option>
+                    ))}
+                  </select>
+                  <input value={s.dobYear} onChange={(e)=>this.setDobYear(e)} placeholder="YYYY" inputMode="numeric" style={{flex:'1.2 1 0%', width:0, minWidth:0, textAlign:'center', border:'1.5px solid rgba(255,255,255,0.16)', borderRadius:12, padding:'16px 4px', fontFamily:"'JetBrains Mono',monospace", fontSize:16, color:'#f2ede6', background:'rgba(255,255,255,0.06)', outline:'none'}}/>
+                </div>
+                <div style={{marginTop:'auto'}}>
+                  <div className="clickable magnetic-btn" onClick={()=>this.submitDob()} onMouseMove={(e)=>this.magnetic(e)} onMouseLeave={(e)=>this.magneticReset(e)} style={{textAlign:'center', background:'#f2ede6', color:'#17120d', borderRadius:14, padding:17, fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer'}}>CREATE ACCOUNT →</div>
+                </div>
+              </div>
+            </div>
+          }
+
+          {s.screen==='signupDone' &&
+            <div style={{height:792, background:'#0b0805', color:'#f2f1ee', display:'flex', flexDirection:'column', padding:'70px 28px 30px', position:'relative', overflow:'hidden', animation:'lune-enter .32s ease both'}}>
+              <Starfield/>
+              <div style={{position:'relative', flex:1}}>
+                <img src={IMG('lune-rocket-white.png')} alt="" style={{width:60, height:60, objectFit:'contain', display:'block', marginBottom:28, filter:'drop-shadow(0 0 40px rgba(170,130,90,0.55))', animation:'lune-pop .5s ease both'}}/>
+                <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:11, letterSpacing:'0.16em', color:'#9a8f80'}}>YOU'RE ALL SET</div>
+                <h2 style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:30, letterSpacing:'-0.02em', margin:'12px 0 8px'}}>Welcome to Lune Rewards, {s.firstName.split(' ')[0]}</h2>
+                <p style={{fontSize:13.5, lineHeight:1.6, color:'#c3b8ab', margin:'0 0 28px', maxWidth:280}}>You'll earn 5% back in Lune Dollars on every order, and you can redeem your balance at checkout, any time.</p>
+                <div style={{display:'flex', flexDirection:'column', gap:16, fontFamily:"'JetBrains Mono',monospace", fontSize:12.5}}>
+                  <div style={{display:'flex', justifyContent:'space-between', borderTop:'1px solid rgba(255,255,255,0.14)', paddingTop:14}}><span style={{color:'#9a8f80'}}>EARN RATE</span><span>5% back in Lune Dollars</span></div>
+                  <div style={{display:'flex', justifyContent:'space-between', borderTop:'1px solid rgba(255,255,255,0.14)', paddingTop:14}}><span style={{color:'#9a8f80'}}>BALANCE</span><span>{money(s.rewards)}</span></div>
+                </div>
+              </div>
+              <div style={{position:'relative'}}>
+                <div className="clickable magnetic-btn btn-accent" onClick={()=>this.finishSignup()} onMouseMove={(e)=>this.magnetic(e)} onMouseLeave={(e)=>this.magneticReset(e)} style={{textAlign:'center', background:ACC, color:'#f4f4f2', borderRadius:14, padding:16, fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer'}}>{s.signupReturnTo==='pickup' ? 'CONTINUE TO CHECKOUT →' : 'START ORDERING →'}</div>
               </div>
             </div>
           }
@@ -655,21 +910,49 @@ class App extends React.Component {
                     <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10.5, letterSpacing:'0.14em', color:'#a8a297', margin:'2px 0 2px'}}>ALL {CAT_LABEL[s.category] || ''}</div>
                   </React.Fragment>
                 }
-                {items.map(row=>(
-                  <div key={row.key} style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'14px 0', borderBottom:'1px solid #e0dfda', animation:'lune-fade-up .5s cubic-bezier(.16,.7,.2,1) both', animationDelay:row.inDelay}}>
-                    <div className="clickable item-row-main" onClick={row.open} style={{display:'flex', gap:14, alignItems:'center', cursor:'pointer', flex:1}}>
-                      <div style={{width:54, height:54, flexShrink:0, borderRadius:12, overflow:'hidden', background:'#efece6', display:'flex', alignItems:'center', justifyContent:'center'}}>{this.thumbEl(row.item)}</div>
-                      <div>
-                        <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:16}}>{row.name}</div>
-                        <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#8a8375', marginTop:4, letterSpacing:'0.06em'}}>{row.meta}</div>
+                {!showFeature &&
+                  <div style={{display:'flex', justifyContent:'flex-end', alignItems:'center', gap:6, margin:'12px 0 4px'}}>
+                    <span className="clickable view-toggle-btn" onClick={()=>this.setState({menuView:'list'})} style={{width:28, height:28, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', background: s.menuView==='list' ? '#141414' : 'transparent', color: s.menuView==='list' ? '#f4f4f2' : '#a8a297', cursor:'pointer'}}>
+                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><rect x="1.5" y="2" width="3" height="3" rx="0.6"></rect><path d="M6.5 3.5h8"></path><rect x="1.5" y="6.5" width="3" height="3" rx="0.6"></rect><path d="M6.5 8h8"></path><rect x="1.5" y="11" width="3" height="3" rx="0.6"></rect><path d="M6.5 12.5h8"></path></svg>
+                    </span>
+                    <span className="clickable view-toggle-btn" onClick={()=>this.setState({menuView:'grid'})} style={{width:28, height:28, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', background: s.menuView==='grid' ? '#141414' : 'transparent', color: s.menuView==='grid' ? '#f4f4f2' : '#a8a297', cursor:'pointer'}}>
+                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1"></rect><rect x="9" y="1.5" width="5.5" height="5.5" rx="1"></rect><rect x="1.5" y="9" width="5.5" height="5.5" rx="1"></rect><rect x="9" y="9" width="5.5" height="5.5" rx="1"></rect></svg>
+                    </span>
+                  </div>
+                }
+                {(!showFeature && s.menuView==='grid') ? (
+                  <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'22px 14px', paddingBottom:8}}>
+                    {items.map(row=>(
+                      <div key={row.key} className="clickable menu-grid-card" onClick={row.open} style={{cursor:'pointer', animation:'lune-fade-up .5s cubic-bezier(.16,.7,.2,1) both', animationDelay:row.inDelay}}>
+                        <div style={{position:'relative', width:'100%', aspectRatio:'1', borderRadius:14, overflow:'hidden', background:'#efece6'}}>
+                          {this.thumbEl(row.item)}
+                          <div className="clickable plus-btn-sm" onClick={(e)=>{ e.stopPropagation(); row.add(); }} style={{position:'absolute', bottom:8, right:8, width:30, height:30, background:'rgba(20,20,20,0.85)', backdropFilter:'blur(6px)', color:'#f4f4f2', display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, borderRadius:8}}>+</div>
+                        </div>
+                        <div style={{marginTop:10}}>
+                          <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:14.5, lineHeight:1.25}}>{row.name}</div>
+                          <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:'#8a8375', marginTop:3, letterSpacing:'0.05em'}}>{row.meta}</div>
+                          <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:12, marginTop:5}}>{row.priceStr}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  items.map(row=>(
+                    <div key={row.key} style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'14px 0', borderBottom:'1px solid #e0dfda', animation:'lune-fade-up .5s cubic-bezier(.16,.7,.2,1) both', animationDelay:row.inDelay}}>
+                      <div className="clickable item-row-main" onClick={row.open} style={{display:'flex', gap:14, alignItems:'center', cursor:'pointer', flex:1}}>
+                        <div style={{width:54, height:54, flexShrink:0, borderRadius:12, overflow:'hidden', background:'#efece6', display:'flex', alignItems:'center', justifyContent:'center'}}>{this.thumbEl(row.item)}</div>
+                        <div>
+                          <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:16}}>{row.name}</div>
+                          <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#8a8375', marginTop:4, letterSpacing:'0.06em'}}>{row.meta}</div>
+                        </div>
+                      </div>
+                      <div style={{textAlign:'right', marginLeft:12}}>
+                        <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:13}}>{row.priceStr}</div>
+                        <div className="clickable plus-btn-sm" onClick={row.add} style={{width:30, height:30, marginTop:6, marginLeft:'auto', background:'#141414', color:'#f4f4f2', display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, borderRadius:8, cursor:'pointer'}}>+</div>
                       </div>
                     </div>
-                    <div style={{textAlign:'right', marginLeft:12}}>
-                      <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:13}}>{row.priceStr}</div>
-                      <div className="clickable plus-btn-sm" onClick={row.add} style={{width:30, height:30, marginTop:6, marginLeft:'auto', background:'#141414', color:'#f4f4f2', display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, borderRadius:8, cursor:'pointer'}}>+</div>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
               {s.cart.length>0 &&
                 <div style={{position:'absolute', left:0, right:0, bottom:0, padding:'14px 24px 26px', background:'linear-gradient(transparent,#f4f4f2 34%)'}}>
@@ -857,6 +1140,7 @@ class App extends React.Component {
             const rewardsToggleBg = s.applyRewards ? ACC : '#d7d6d0';
             const rewardsKnobX = s.applyRewards ? 21 : 3;
             const payTotal = this.payTotalNum();
+            const earnAmount = money(Math.round(sub*0.05*100)/100);
             return (
             <div style={{height:792, display:'flex', flexDirection:'column', animation:'lune-enter .32s ease both'}}>
               <div style={{padding:'44px 24px 14px'}}>
@@ -880,18 +1164,77 @@ class App extends React.Component {
                 </div>
                 <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10.5, color:'#a8a297', letterSpacing:'0.1em', margin:'26px 0 12px'}}>NAME FOR PICKUP</div>
                 <input value={s.name} onChange={(e)=>this.setState({ name:e.target.value })} placeholder="Your name" style={{width:'100%', border:'1px solid #e0dfda', borderRadius:10, padding:14, fontFamily:"'JetBrains Mono',monospace", fontSize:14, color:'#141414', background:'#fff', outline:'none'}}/>
-                {isMember &&
-                  <div className="clickable rewards-row" onClick={()=>this.toggleRewards()} style={{marginTop:22, display:'flex', alignItems:'center', justifyContent:'space-between', border:'1px solid '+(s.applyRewards?'#141414':'#e0dfda'), borderRadius:12, padding:'14px 16px', background: s.applyRewards?'#f7f4ee':'#fff', cursor:'pointer'}}>
-                    <div style={{display:'flex', alignItems:'center', gap:11}}>
-                      <img src={IMG('lune-rocket.png')} alt="" style={{width:22, height:22, objectFit:'contain', display:'block'}}/>
+                {isMember ? (
+                  <div style={{marginTop:26, border:'1px solid #e0dfda', borderRadius:14, padding:'16px 18px', background:'#fff'}}>
+                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                      <div style={{display:'flex', alignItems:'center', gap:10}}>
+                        <img src={IMG('lune-rocket.png')} alt="" style={{width:20, height:20, objectFit:'contain', display:'block'}}/>
+                        <span style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:13.5, color:'#141414'}}>Lune Rewards</span>
+                      </div>
+                      <span style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10.5, color:ACC}}>{rewardsStr} available</span>
+                    </div>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:'#8a8375', marginTop:8}}>You'll earn <span style={{color:'#141414'}}>{earnAmount}</span> in Lune Dollars on this order</div>
+                    {s.rewards>0 &&
+                      <div className="clickable rewards-row" onClick={()=>this.toggleRewards()} style={{marginTop:14, display:'flex', alignItems:'center', justifyContent:'space-between', border:'1px solid '+(s.applyRewards?'#141414':'#e0dfda'), borderRadius:10, padding:'11px 14px', background: s.applyRewards?'#f7f4ee':'#fbfbf9', cursor:'pointer'}}>
+                        <span style={{fontFamily:"'JetBrains Mono',monospace", fontSize:11.5, color:'#141414'}}>Redeem {rewardsStr} on this order</span>
+                        <span style={{width:40, height:24, borderRadius:20, background:rewardsToggleBg, position:'relative', transition:'background .2s ease', flexShrink:0}}><span style={{position:'absolute', top:3, left:s.applyRewards?18:3, width:18, height:18, borderRadius:'50%', background:'#fff', transition:'left .2s ease', boxShadow:'0 1px 3px rgba(0,0,0,0.3)'}}></span></span>
+                      </div>
+                    }
+                  </div>
+                ) : (
+                  <div className="clickable magnetic-btn rewards-signup-card" onClick={()=>this.startSignupFromCheckout()} onMouseMove={(e)=>this.magnetic(e)} onMouseLeave={(e)=>this.magneticReset(e)} style={{marginTop:26, border:'1.5px dashed '+ACC, borderRadius:14, padding:'16px 18px', background:'#fbf6ee', cursor:'pointer', display:'flex', alignItems:'center', gap:14}}>
+                    <img src={IMG('lune-rocket.png')} alt="" style={{width:32, height:32, objectFit:'contain', display:'block', flexShrink:0}}/>
+                    <div style={{flex:1}}>
+                      <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:13.5, color:'#141414'}}>Earn {earnAmount} in Lune Dollars</div>
+                      <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#8a8375', marginTop:3}}>Sign up in under a minute — before you pay</div>
+                    </div>
+                    <span style={{fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:ACC, flexShrink:0}}>SIGN UP →</span>
+                  </div>
+                )}
+                <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10.5, color:'#a8a297', letterSpacing:'0.1em', margin:'26px 0 12px'}}>PAYMENT METHOD</div>
+                {usingSavedCard ? (
+                  <div className="clickable rewards-row" onClick={()=>this.useNewCardToggle()} style={{display:'flex', alignItems:'center', justifyContent:'space-between', border:'1px solid #e0dfda', borderRadius:12, padding:'14px 16px', background:'#fff', cursor:'pointer'}}>
+                    <div style={{display:'flex', alignItems:'center', gap:12}}>
+                      <div style={{width:38, height:26, borderRadius:6, background:'#141414', color:'#f4f4f2', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'JetBrains Mono',monospace", fontSize:9, letterSpacing:'0.02em'}}>{s.savedCard.brand.slice(0,4).toUpperCase()}</div>
                       <div>
-                        <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:13.5, color:'#141414'}}>Apply Lune Rewards</div>
-                        <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#8a8375', marginTop:2}}>{rewardsStr} available</div>
+                        <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:13.5, color:'#141414'}}>•••• {s.savedCard.last4}</div>
+                        <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#8a8375', marginTop:2}}>Expires {s.savedCard.expiry}</div>
                       </div>
                     </div>
-                    <span style={{width:44, height:26, borderRadius:20, background:rewardsToggleBg, position:'relative', transition:'background .2s ease', flexShrink:0}}><span style={{position:'absolute', top:3, left:rewardsKnobX, width:20, height:20, borderRadius:'50%', background:'#fff', transition:'left .2s ease', boxShadow:'0 1px 3px rgba(0,0,0,0.3)'}}></span></span>
+                    <span style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10.5, color:ACC}}>CHANGE</span>
                   </div>
-                }
+                ) : (
+                  <div style={{display:'flex', flexDirection:'column', gap:10}}>
+                    {s.savedCard &&
+                      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:2}}>
+                        <span className="clickable link-accent" onClick={()=>this.useSavedCard()} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10.5, color:ACC, cursor:'pointer'}}>‹ USE SAVED CARD ENDING {s.savedCard.last4}</span>
+                        <span className="clickable link-accent" onClick={(e)=>this.forgetSavedCard(e)} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#a8a297', cursor:'pointer'}}>REMOVE</span>
+                      </div>
+                    }
+                    <div>
+                      <input value={s.cardNumber} onChange={(e)=>this.setCardNumber(e)} placeholder="Card number" inputMode="numeric" autoComplete="cc-number" style={{width:'100%', border:'1px solid '+(cardErr.cardNumber?'#c0453a':'#e0dfda'), borderRadius:10, padding:14, fontFamily:"'JetBrains Mono',monospace", fontSize:14, color:'#141414', background:'#fff', outline:'none'}}/>
+                      {cardErr.cardNumber && <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, color:'#c0453a', marginTop:5}}>{cardErr.cardNumber}</div>}
+                    </div>
+                    <div style={{display:'flex', gap:10}}>
+                      <div style={{flex:1}}>
+                        <input value={s.cardExpiry} onChange={(e)=>this.setCardExpiry(e)} placeholder="MM/YY" inputMode="numeric" autoComplete="cc-exp" style={{width:'100%', border:'1px solid '+(cardErr.cardExpiry?'#c0453a':'#e0dfda'), borderRadius:10, padding:14, fontFamily:"'JetBrains Mono',monospace", fontSize:14, color:'#141414', background:'#fff', outline:'none'}}/>
+                        {cardErr.cardExpiry && <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, color:'#c0453a', marginTop:5}}>{cardErr.cardExpiry}</div>}
+                      </div>
+                      <div style={{flex:1}}>
+                        <input value={s.cardCvc} onChange={(e)=>this.setCardCvc(e)} placeholder="CVC" inputMode="numeric" autoComplete="cc-csc" style={{width:'100%', border:'1px solid '+(cardErr.cardCvc?'#c0453a':'#e0dfda'), borderRadius:10, padding:14, fontFamily:"'JetBrains Mono',monospace", fontSize:14, color:'#141414', background:'#fff', outline:'none'}}/>
+                        {cardErr.cardCvc && <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, color:'#c0453a', marginTop:5}}>{cardErr.cardCvc}</div>}
+                      </div>
+                    </div>
+                    <div>
+                      <input value={s.cardName} onChange={(e)=>this.setCardName(e)} placeholder="Name on card" autoComplete="cc-name" style={{width:'100%', border:'1px solid '+(cardErr.cardName?'#c0453a':'#e0dfda'), borderRadius:10, padding:14, fontFamily:"'JetBrains Mono',monospace", fontSize:14, color:'#141414', background:'#fff', outline:'none'}}/>
+                      {cardErr.cardName && <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, color:'#c0453a', marginTop:5}}>{cardErr.cardName}</div>}
+                    </div>
+                    <div className="clickable" onClick={()=>this.toggleSaveCard()} style={{display:'flex', alignItems:'center', gap:10, cursor:'pointer', marginTop:2}}>
+                      <span style={{width:20, height:20, borderRadius:6, border:'1.5px solid '+(s.saveCard?'#141414':'#cfcec7'), background:s.saveCard?'#141414':'#fff', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontSize:13, flexShrink:0}}>{s.saveCard?'✓':''}</span>
+                      <span style={{fontFamily:"'JetBrains Mono',monospace", fontSize:11.5, color:'#6b6459'}}>Save this card for future orders</span>
+                    </div>
+                  </div>
+                )}
                 <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10.5, color:'#a8a297', letterSpacing:'0.1em', margin:'26px 0 12px'}}>YOUR ORDER</div>
                 <div style={{display:'flex', flexDirection:'column'}}>
                   {cart.map(line=>(
@@ -915,10 +1258,10 @@ class App extends React.Component {
                 </div>
               </div>
               <div style={{padding:'14px 24px 26px'}}>
-                <div className="clickable magnetic-btn btn-dark" onClick={()=>this.placeOrder()} onMouseMove={(e)=>this.magnetic(e)} onMouseLeave={(e)=>this.magneticReset(e)} style={{display:'flex', justifyContent:'space-between', alignItems:'center', background: canPay?'#141414':'#c7c5be', color:'#f4f4f2', borderRadius:14, padding:'17px 22px', fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer'}}>
+                <div className="clickable magnetic-btn btn-dark" onClick={()=>this.placeOrder()} onMouseMove={(e)=>this.magnetic(e)} onMouseLeave={(e)=>this.magneticReset(e)} style={{display:'flex', justifyContent:'space-between', alignItems:'center', background: (canPay && cardOk)?'#141414':'#c7c5be', color:'#f4f4f2', borderRadius:14, padding:'17px 22px', fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer'}}>
                   <span>PLACE ORDER</span><span>{money(payTotal)} →</span>
                 </div>
-                <div style={{textAlign:'center', fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#a8a297', marginTop:12}}>{canPay ? 'PAY ON PICKUP · OR CARD AT CHECKOUT' : 'YOUR BAG IS EMPTY'}</div>
+                <div style={{textAlign:'center', fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#a8a297', marginTop:12}}>{!canPay ? 'YOUR BAG IS EMPTY' : usingSavedCard ? ('CARD ENDING ' + s.savedCard.last4 + ' WILL BE CHARGED') : cardOk ? 'YOUR CARD WILL BE CHARGED ON CONFIRMATION' : 'ENTER YOUR CARD DETAILS TO CONTINUE'}</div>
               </div>
             </div>
             );
@@ -952,11 +1295,20 @@ class App extends React.Component {
                 <img src={IMG('lune-rocket-white.png')} alt="" style={{width:60, height:60, objectFit:'contain', display:'block', marginBottom:28, filter:'drop-shadow(0 0 40px rgba(170,130,90,0.55))', animation:'lune-pop .5s ease both'}}/>
                 <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:11, letterSpacing:'0.16em', color:'#9a8f80'}}>ORDER CONFIRMED</div>
                 <h2 style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:32, letterSpacing:'-0.02em', margin:'12px 0 8px'}}>See you soon{s.name ? ', ' + s.name.split(' ')[0] : ''}</h2>
-                <p style={{fontSize:13.5, lineHeight:1.6, color:'#c3b8ab', margin:'0 0 34px', maxWidth:270}}>We're on it. Track your order below — we'll have it ready at the counter.</p>
+                <p style={{fontSize:13.5, lineHeight:1.6, color:'#c3b8ab', margin:'0 0 20px', maxWidth:270}}>We're on it. Track your order below — we'll have it ready at the counter.</p>
+                {s.lastEarned>0 &&
+                  <div style={{display:'inline-flex', alignItems:'center', gap:9, background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.16)', borderRadius:30, padding:'9px 14px', marginBottom:24}}>
+                    <img src={IMG('lune-rocket.png')} alt="" style={{width:18, height:18, objectFit:'contain', display:'block'}}/>
+                    <span style={{fontFamily:"'JetBrains Mono',monospace", fontSize:11.5, color:'#f2ede6'}}>You earned <span style={{color:'#e0c9a8'}}>{money(s.lastEarned)}</span> in Lune Dollars</span>
+                  </div>
+                }
                 <div style={{display:'flex', flexDirection:'column', gap:16, fontFamily:"'JetBrains Mono',monospace", fontSize:12.5}}>
                   <div style={{display:'flex', justifyContent:'space-between', borderTop:'1px solid rgba(255,255,255,0.14)', paddingTop:14}}><span style={{color:'#9a8f80'}}>ORDER</span><span>{s.orderNo}</span></div>
                   <div style={{display:'flex', justifyContent:'space-between', borderTop:'1px solid rgba(255,255,255,0.14)', paddingTop:14}}><span style={{color:'#9a8f80'}}>STORE</span><span>{store.name}</span></div>
                   <div style={{display:'flex', justifyContent:'space-between', borderTop:'1px solid rgba(255,255,255,0.14)', paddingTop:14}}><span style={{color:'#9a8f80'}}>PICKUP</span><span>{pickupFull}</span></div>
+                  {s.savedCard &&
+                    <div style={{display:'flex', justifyContent:'space-between', borderTop:'1px solid rgba(255,255,255,0.14)', paddingTop:14}}><span style={{color:'#9a8f80'}}>PAID WITH</span><span>{s.savedCard.brand} •••• {s.savedCard.last4}</span></div>
+                  }
                   <div style={{display:'flex', justifyContent:'space-between', borderTop:'1px solid rgba(255,255,255,0.14)', paddingTop:14}}><span style={{color:'#9a8f80'}}>TOTAL</span><span>{money(this.payTotalNum())}</span></div>
                 </div>
               </div>
@@ -1058,8 +1410,10 @@ class App extends React.Component {
 
           {s.screen==='profile' && (()=>{
             const profileRows = [
+              { label:'FULL NAME', value:(s.user||'') + (s.lastName? ' '+s.lastName : '') || 'Guest' },
               { label:'MOBILE', value:'+61 '+(s.phone? (s.phone.slice(0,3)+' '+s.phone.slice(3,6)+' '+s.phone.slice(6,9)) : '412 345 678') },
               { label:'EMAIL', value:(s.user? s.user.toLowerCase():'keith')+'@lune.co' },
+              { label:'BIRTHDAY', value:(s.dobDay && s.dobMonth) ? (s.dobDay.padStart(2,'0')+'/'+s.dobMonth.padStart(2,'0')) : 'Not set' },
               { label:'SAVED STORE', value:store.name },
               { label:'DIETARY', value:'None set' },
             ];
@@ -1075,7 +1429,7 @@ class App extends React.Component {
                   <div style={{width:64, height:64, borderRadius:'50%', flexShrink:0, background:'linear-gradient(145deg,#4a3624,#17120d)', border:'1px solid rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:26, boxShadow:'0 0 30px -6px rgba(170,130,90,0.4)'}}>{initial}</div>
                   <div>
                     <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:24, letterSpacing:'-0.02em'}}>{s.user||'Guest'}</div>
-                    <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#9a8f80', marginTop:5, letterSpacing:'0.06em'}}>LUNE MEMBER · JOINED 2024</div>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#9a8f80', marginTop:5, letterSpacing:'0.06em'}}>LUNE MEMBER · JOINED {s.memberSince||'—'}</div>
                   </div>
                 </div>
 
@@ -1084,6 +1438,15 @@ class App extends React.Component {
                   <div style={{flex:1}}>
                     <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:15}}>Membership QR</div>
                     <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#9a8f80', marginTop:3}}>Scan in-store to earn &amp; redeem</div>
+                  </div>
+                  <span style={{color:'#9a8f80', fontSize:16}}>›</span>
+                </div>
+
+                <div className="clickable qr-row" onClick={()=>this.go('orderHistory')} style={{marginTop:12, display:'flex', alignItems:'center', gap:14, border:'1px solid rgba(255,255,255,0.16)', borderRadius:16, padding:'16px 18px', background:'rgba(255,255,255,0.04)', cursor:'pointer'}}>
+                  <span style={{width:44, height:44, borderRadius:12, flexShrink:0, background:'#f2ede6', color:'#141414', display:'flex', alignItems:'center', justifyContent:'center'}}><svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3"><circle cx="8" cy="8" r="6.3"></circle><path d="M8 4.6v3.6l2.4 1.4"></path></svg></span>
+                  <div style={{flex:1}}>
+                    <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:15}}>Order History</div>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#9a8f80', marginTop:3}}>View past orders &amp; reorder</div>
                   </div>
                   <span style={{color:'#9a8f80', fontSize:16}}>›</span>
                 </div>
@@ -1109,6 +1472,47 @@ class App extends React.Component {
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+            );
+          })()}
+
+          {s.screen==='orderHistory' && (()=>{
+            const itemSummary = (items)=> items.map(r=>{
+              const it = this._findItem(r.id);
+              const nm = it ? it.name : 'Item';
+              const milkTxt = (r.milk && r.milk!=='Full cream') ? ' ('+r.milk+')' : '';
+              return (r.qty||1)+'× '+nm+milkTxt;
+            }).join(', ');
+            return (
+            <div className="lune-scroll" style={{height:792, overflowY:'auto', background:'#0b0805', color:'#f2ede6', position:'relative', animation:'lune-enter .32s ease both'}}>
+              <Starfield/>
+              <div style={{position:'relative', padding:'52px 26px 34px'}}>
+                <div className="clickable link-muted" onClick={()=>this.goBack()} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'#9a8f80', cursor:'pointer'}}>‹ BACK</div>
+                <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:26, letterSpacing:'-0.02em', marginTop:20}}>Order History</div>
+                {s.orderHistory.length===0 ? (
+                  <p style={{fontSize:13, lineHeight:1.6, color:'#c3b8ab', marginTop:20, maxWidth:260}}>No orders yet — your past pickups will show up here once you place an order.</p>
+                ) : (
+                  <div style={{display:'flex', flexDirection:'column', gap:14, marginTop:24}}>
+                    {s.orderHistory.map((order,i)=>(
+                      <div key={order.orderNo+i} style={{border:'1px solid rgba(255,255,255,0.14)', borderRadius:16, padding:'16px 18px', background:'rgba(255,255,255,0.04)'}}>
+                        <div style={{display:'flex', justifyContent:'space-between', alignItems:'baseline'}}>
+                          <span style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:15}}>{order.store}</span>
+                          <span style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#9a8f80'}}>{order.dateLabel}</span>
+                        </div>
+                        <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, color:'#8a8375', marginTop:4, letterSpacing:'0.04em'}}>{order.orderNo} · {order.pickup}</div>
+                        <div style={{fontSize:12.5, lineHeight:1.5, color:'#d3c6b5', marginTop:12}}>{itemSummary(order.items)}</div>
+                        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:16}}>
+                          <div>
+                            <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:15}}>{money(order.total)}</div>
+                            {order.earned>0 && <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, color:'#e0c9a8', marginTop:2}}>+{money(order.earned)} earned</div>}
+                          </div>
+                          <div className="clickable btn-outline" onClick={()=>this.reorderOrder(order)} style={{border:'1px solid rgba(255,255,255,0.28)', color:'#f2f1ee', borderRadius:10, padding:'10px 16px', fontFamily:"'JetBrains Mono',monospace", fontSize:11, cursor:'pointer'}}>REORDER</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
             );
