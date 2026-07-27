@@ -308,7 +308,17 @@ class App extends React.Component {
     return this._qr;
   }
   onFeatureScroll(e){ const el=e.target; const i=Math.round(el.scrollLeft/(el.clientWidth*0.84+14)); if(i!==this.state.featureIdx) this.setState({ featureIdx:i }); }
-  toggleFav(){ const a=this.state.active; if(!a) return; const fav={...this.state.fav}; fav[a.id]=!fav[a.id]; this.setState({ fav }); }
+  toggleFav(){ if(this.state.active) this.toggleFavId(this.state.active.id); }
+  toggleFavId(id){
+    if(this.state.guest || !this.state.user){ this.showToast('Sign up to save favourites'); return; }
+    const fav = {...this.state.fav};
+    fav[id] = !fav[id];
+    this.setState({ fav });
+    try{
+      const raw = localStorage.getItem('lune_profile');
+      if(raw){ const p = JSON.parse(raw); p.favourites = fav; localStorage.setItem('lune_profile', JSON.stringify(p)); }
+    }catch(e){ /* localStorage unavailable */ }
+  }
 
   pressPhone(k){ let p=this.state.phone; if(k==='⌫') p=p.slice(0,-1); else if(p.length<9) p=p+k; this.setState({ phone:p }); }
   submitPhone(){ if(this.state.phone.length>=9) this.setState({ screen:'otp', otp:'' }); }
@@ -353,7 +363,7 @@ class App extends React.Component {
   loginSuccess(){
     const profile = this.loadProfile();
     if(profile){
-      this.setState({ screen:this.state.signupReturnTo||'store', user:profile.firstName, lastName:profile.lastName||'', guest:false, rewards:profile.rewards||0, otp:'', name:profile.firstName, signupReturnTo:'store', memberSince:profile.memberSince||null, orderHistory:this.loadOrderHistory(), greetIdx:Math.floor(Math.random()*GREETINGS.length) });
+      this.setState({ screen:this.state.signupReturnTo||'store', user:profile.firstName, lastName:profile.lastName||'', guest:false, rewards:profile.rewards||0, otp:'', name:profile.firstName, signupReturnTo:'store', memberSince:profile.memberSince||null, orderHistory:this.loadOrderHistory(), fav:profile.favourites||{}, greetIdx:Math.floor(Math.random()*GREETINGS.length) });
     } else {
       this.setState({ screen:'signupFirst', guest:false, otp:'' });
     }
@@ -377,11 +387,11 @@ class App extends React.Component {
   submitDob(){
     if(!this.validateDob()){ this.showToast('Enter a valid birthday'); return; }
     const dob = String(this.state.dobDay).padStart(2,'0')+'/'+String(this.state.dobMonth).padStart(2,'0')+'/'+this.state.dobYear;
-    const profile = { phone:this.state.phone, firstName:this.state.firstName.trim(), lastName:this.state.lastName.trim(), dob, memberSince:new Date().getFullYear(), rewards:0 };
+    const profile = { phone:this.state.phone, firstName:this.state.firstName.trim(), lastName:this.state.lastName.trim(), dob, memberSince:new Date().getFullYear(), rewards:0, favourites:{} };
     try{ localStorage.setItem('lune_profile', JSON.stringify(profile)); }catch(e){ /* localStorage unavailable */ }
     const seededHistory = this.seedOrderHistory();
     try{ localStorage.setItem('lune_order_history', JSON.stringify(seededHistory)); }catch(e){ /* localStorage unavailable */ }
-    this.setState({ user:profile.firstName, lastName:profile.lastName, name:profile.firstName, guest:false, rewards:0, memberSince:profile.memberSince, orderHistory:seededHistory, screen:'signupDone' });
+    this.setState({ user:profile.firstName, lastName:profile.lastName, name:profile.firstName, guest:false, rewards:0, memberSince:profile.memberSince, orderHistory:seededHistory, fav:{}, screen:'signupDone' });
   }
   finishSignup(){
     const dest = this.state.signupReturnTo || 'store';
@@ -584,7 +594,7 @@ class App extends React.Component {
     const isMember = !s.guest && !!s.user;
     const isGuest = s.guest;
     const ms = s.menuScrolled;
-    const darkScreens = ['store','confirm','track','item','splash','login','otp','rewards','profile','launching','signupFirst','signupLast','signupDob','signupDone','orderHistory'].includes(s.screen);
+    const darkScreens = ['store','confirm','track','item','splash','login','otp','rewards','profile','launching','signupFirst','signupLast','signupDob','signupDone','orderHistory','favourites'].includes(s.screen);
     const initial = (s.user||'L').trim().charAt(0).toUpperCase();
     const now = new Date().getHours();
     const greetingKicker = now<12 ? 'GOOD MORNING' : (now<17 ? 'GOOD AFTERNOON' : 'GOOD EVENING');
@@ -843,7 +853,7 @@ class App extends React.Component {
               img: it.img,
               open:()=>this.openItem(it), add:(e)=>{ if(e&&e.stopPropagation) e.stopPropagation(); this.quickAdd(it); },
             }));
-            const listItems = MENU[s.category];
+            const listItems = showFeature ? MENU[s.category] : [...MENU[s.category]].sort((a,b)=>(s.fav[b.id]?1:0)-(s.fav[a.id]?1:0));
             const featureDots = featList.map((it,i)=>({ w: i===s.featureIdx ? 18 : 6, bg: i===s.featureIdx ? '#141414' : '#cfcdc5' }));
             const items = listItems.map((it,i)=>({
               key:it.id, item:it, name:it.name, meta:it.meta, priceStr:priceStr(it.price), inDelay: (Math.min(i,9)*45)+'ms',
@@ -965,6 +975,7 @@ class App extends React.Component {
                       <div key={row.key} className="clickable menu-grid-card" onClick={row.open} style={{cursor:'pointer', animation:'lune-fade-up .5s cubic-bezier(.16,.7,.2,1) both', animationDelay:row.inDelay}}>
                         <div style={{position:'relative', width:'100%', aspectRatio:'1', borderRadius:14, overflow:'hidden', background:'#efece6'}}>
                           {this.thumbEl(row.item)}
+                          <span className="clickable" onClick={(e)=>{ e.stopPropagation(); this.toggleFavId(row.item.id); }} style={{position:'absolute', top:8, right:8, width:28, height:28, borderRadius:'50%', background:'rgba(255,255,255,0.85)', backdropFilter:'blur(4px)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, color: s.fav[row.item.id] ? '#e07a5f' : '#8a8375'}}>{s.fav[row.item.id] ? '♥' : '♡'}</span>
                           <div className="clickable plus-btn-sm" onClick={(e)=>{ e.stopPropagation(); row.add(); }} style={{position:'absolute', bottom:8, right:8, width:30, height:30, background:'rgba(20,20,20,0.85)', backdropFilter:'blur(6px)', color:'#f4f4f2', display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, borderRadius:8}}>+</div>
                         </div>
                         <div style={{marginTop:10}}>
@@ -979,7 +990,10 @@ class App extends React.Component {
                   items.map(row=>(
                     <div key={row.key} style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'14px 0', borderBottom:'1px solid #e0dfda', animation:'lune-fade-up .5s cubic-bezier(.16,.7,.2,1) both', animationDelay:row.inDelay}}>
                       <div className="clickable item-row-main" onClick={row.open} style={{display:'flex', gap:14, alignItems:'center', cursor:'pointer', flex:1}}>
-                        <div style={{width:54, height:54, flexShrink:0, borderRadius:12, overflow:'hidden', background:'#efece6', display:'flex', alignItems:'center', justifyContent:'center'}}>{this.thumbEl(row.item)}</div>
+                        <div style={{width:54, height:54, flexShrink:0, borderRadius:12, overflow:'hidden', background:'#efece6', display:'flex', alignItems:'center', justifyContent:'center', position:'relative'}}>
+                          {this.thumbEl(row.item)}
+                          <span className="clickable" onClick={(e)=>{ e.stopPropagation(); this.toggleFavId(row.item.id); }} style={{position:'absolute', top:2, right:2, width:20, height:20, borderRadius:'50%', background:'rgba(255,255,255,0.85)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, color: s.fav[row.item.id] ? '#e07a5f' : '#8a8375'}}>{s.fav[row.item.id] ? '♥' : '♡'}</span>
+                        </div>
                         <div>
                           <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:16}}>{row.name}</div>
                           <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#8a8375', marginTop:4, letterSpacing:'0.06em'}}>{row.meta}</div>
@@ -1490,6 +1504,15 @@ class App extends React.Component {
                   <span style={{color:'#9a8f80', fontSize:16}}>›</span>
                 </div>
 
+                <div className="clickable qr-row" onClick={()=>this.go('favourites')} style={{marginTop:12, display:'flex', alignItems:'center', gap:14, border:'1px solid rgba(255,255,255,0.16)', borderRadius:16, padding:'16px 18px', background:'rgba(255,255,255,0.04)', cursor:'pointer'}}>
+                  <span style={{width:44, height:44, borderRadius:12, flexShrink:0, background:'#f2ede6', color:'#141414', display:'flex', alignItems:'center', justifyContent:'center'}}><svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3"><path d="M8 13.6s-5.6-3.4-5.6-7.3C2.4 4 4.1 2.4 6 2.4c1 0 1.6.5 2 1.1.4-.6 1-1.1 2-1.1 1.9 0 3.6 1.6 3.6 3.9 0 3.9-5.6 7.3-5.6 7.3z"></path></svg></span>
+                  <div style={{flex:1}}>
+                    <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:15}}>Favourites</div>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#9a8f80', marginTop:3}}>Manage your saved items</div>
+                  </div>
+                  <span style={{color:'#9a8f80', fontSize:16}}>›</span>
+                </div>
+
                 <div style={{display:'flex', gap:12, marginTop:14}}>
                   <div style={{flex:1, border:'1px solid rgba(255,255,255,0.14)', borderRadius:16, padding:16, background:'rgba(255,255,255,0.04)'}}>
                     <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, letterSpacing:'0.12em', color:'#9a8f80'}}>WALLET</div>
@@ -1547,6 +1570,40 @@ class App extends React.Component {
                             {order.earned>0 && <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, color:'#e0c9a8', marginTop:2}}>+{money(order.earned)} earned</div>}
                           </div>
                           <div className="clickable btn-outline" onClick={()=>this.reorderOrder(order)} style={{border:'1px solid rgba(255,255,255,0.28)', color:'#f2f1ee', borderRadius:10, padding:'10px 16px', fontFamily:"'JetBrains Mono',monospace", fontSize:11, cursor:'pointer'}}>REORDER</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            );
+          })()}
+
+          {s.screen==='favourites' && (()=>{
+            const favIds = Object.keys(s.fav).filter(id=>s.fav[id]);
+            const favItems = favIds.map(id=>this._findItem(id)).filter(Boolean);
+            return (
+            <div className="lune-scroll" style={{height:792, overflowY:'auto', background:'#0b0805', color:'#f2ede6', position:'relative', animation:'lune-enter .32s ease both'}}>
+              <Starfield/>
+              <div style={{position:'relative', padding:'52px 26px 34px'}}>
+                <div className="clickable link-muted" onClick={()=>this.goBack()} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'#9a8f80', cursor:'pointer'}}>‹ BACK</div>
+                <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:26, letterSpacing:'-0.02em', marginTop:20}}>Favourites</div>
+                {favItems.length===0 ? (
+                  <p style={{fontSize:13, lineHeight:1.6, color:'#c3b8ab', marginTop:20, maxWidth:260}}>No favourites yet — tap the heart on any item to save it here.</p>
+                ) : (
+                  <div style={{display:'flex', flexDirection:'column', gap:14, marginTop:24}}>
+                    {favItems.map(it=>(
+                      <div key={it.id} style={{border:'1px solid rgba(255,255,255,0.14)', borderRadius:16, padding:'14px 16px', background:'rgba(255,255,255,0.04)', display:'flex', gap:14, alignItems:'center'}}>
+                        <div style={{width:54, height:54, flexShrink:0, borderRadius:12, overflow:'hidden', background:'#efece6'}}>{this.thumbEl(it)}</div>
+                        <div style={{flex:1, minWidth:0}}>
+                          <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:15}}>{it.name}</div>
+                          <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, color:'#9a8f80', marginTop:3}}>{it.meta}</div>
+                          <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'#e0c9a8', marginTop:6}}>{priceStr(it.price)}</div>
+                        </div>
+                        <div style={{display:'flex', flexDirection:'column', alignItems:'flex-end', gap:10}}>
+                          <div className="clickable plus-btn-sm" onClick={()=>this.quickAdd(it)} style={{width:30, height:30, background:'#141414', color:'#f4f4f2', display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, borderRadius:8, cursor:'pointer'}}>+</div>
+                          <span className="clickable link-muted" onClick={()=>this.toggleFavId(it.id)} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, color:'#9a8f80', cursor:'pointer'}}>REMOVE</span>
                         </div>
                       </div>
                     ))}
