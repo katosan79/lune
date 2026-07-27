@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lune — Croissanterie</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin></script>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: #e7e4dd; font-family: 'DM Sans', system-ui, sans-serif; -webkit-font-smoothing: antialiased; display:flex; justify-content:center; align-items:flex-start; min-height:100vh; padding:40px 20px 80px; }
+  a { color: oklch(0.47 0.075 55); } a:hover { color:#141414; }
+  .lune-scroll::-webkit-scrollbar { display:none; }
+  .lune-scroll { scrollbar-width:none; }
+  .clickable { cursor:pointer; transition: transform .32s cubic-bezier(.34,1.56,.64,1), background .18s ease, color .18s ease, border-color .18s ease, opacity .18s ease, box-shadow .18s ease, filter .18s ease; }
+  .clickable:active { transform: scale(0.96); transition-duration: .08s; }
+  .clickable:focus-visible { outline: 2px solid rgba(224,201,168,0.9); outline-offset: 2px; }
+  .magnetic-btn { transition: transform .25s cubic-bezier(.34,1.56,.64,1), background .18s ease, color .18s ease, border-color .18s ease, opacity .18s ease, box-shadow .18s ease, filter .18s ease; }
+  .tab-underline { position:absolute; bottom:-1px; height:2px; background:#141414; border-radius:2px; transition: left .32s cubic-bezier(.34,1.56,.64,1), width .32s cubic-bezier(.34,1.56,.64,1); }
+  .lune-photo { animation: lune-img-in .65s ease both; }
+  @keyframes lune-img-in { from { opacity:0; } to { opacity:1; } }
+  @keyframes lune-enter { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+  @keyframes lune-pop { 0% { opacity:0; transform:scale(.92);} 60%{ transform:scale(1.02);} 100%{ opacity:1; transform:scale(1);} }
+  @keyframes lune-toast { 0%{opacity:0; transform:translateY(14px);} 12%{opacity:1; transform:none;} 84%{opacity:1; transform:none;} 100%{opacity:0; transform:translateY(14px);} }
+  @keyframes lune-pulse { 0%,100%{ transform:scale(1); box-shadow:0 0 0 0 rgba(150,110,70,0.5);} 50%{ transform:scale(1.18); box-shadow:0 0 16px 3px rgba(150,110,70,0.7);} }
+  @keyframes lune-twinkle { 0%,100%{opacity:.25;} 50%{opacity:1;} }
+  @keyframes lune-ping { 0%{transform:scale(1); opacity:.7;} 100%{transform:scale(2.6); opacity:0;} }
+  @keyframes lune-sheet { from { transform:translateY(100%); } to { transform:translateY(0); } }
+  @keyframes lune-fade { from { opacity:0; } to { opacity:1; } }
+  @keyframes lune-rise { 0% { opacity:0; transform:translateY(26px) scale(.94); } 100% { opacity:1; transform:none; } }
+  @keyframes lune-star-near { from { background-position:0 0; } to { background-position:-120px 480px; } }
+  @keyframes lune-star-mid  { from { background-position:0 0; } to { background-position:-80px 400px; } }
+  @keyframes lune-star-far  { from { background-position:0 0; } to { background-position:-40px 260px; } }
+  @keyframes lune-fade-up { 0% { opacity:0; transform:translateY(10px); } 100% { opacity:1; transform:none; } }
+  @keyframes lune-liftoff { 0% { transform:translateY(0) scale(1); } 16% { transform:translateY(8px) scale(.97); } 30% { transform:translateY(-1px) scale(1); } 100% { transform:translateY(-760px) scale(.62); opacity:0; } }
+  @keyframes lune-plume { 0% { opacity:0; transform:translate(-50%,0) rotate(45deg) scaleY(.2); } 16% { opacity:0; } 26% { opacity:.95; transform:translate(-50%,0) rotate(45deg) scaleY(.7); } 62% { opacity:.85; transform:translate(-50%,0) rotate(45deg) scaleY(1.15); } 100% { opacity:0; transform:translate(-50%,0) rotate(45deg) scaleY(1.5); } }
+  @keyframes lune-shudder { 0%,100% { transform:translate(0,0); } 25% { transform:translate(-1.2px,0); } 75% { transform:translate(1.2px,0); } }
+  @keyframes lune-launch-text { 0% { opacity:0; transform:translateY(6px); } 14% { opacity:1; transform:none; } 60% { opacity:1; } 82% { opacity:0; } 100% { opacity:0; } }
+  @keyframes lune-fly { 0% { transform:translate(0,0) rotate(0deg); } 25% { transform:translate(3px,-5px) rotate(1deg); } 50% { transform:translate(-2px,4px) rotate(-1.2deg); } 75% { transform:translate(-4px,-3px) rotate(0.6deg); } 100% { transform:translate(0,0) rotate(0deg); } }
+
+  .link-muted:hover{color:#f2ede6}
+  .link-accent:hover{color:#141414 !important}
+  .btn-dark:hover{filter:brightness(1.25)}
+  .btn-accent:hover{filter:brightness(1.15)}
+  .btn-outline:hover{background:rgba(255,255,255,0.08)}
+  .icon-btn-dark:hover{background:rgba(255,255,255,0.14)}
+  .icon-btn-glass:hover{background:rgba(255,255,255,0.18)}
+  .avatar-btn:hover{filter:brightness(1.2)}
+  .rewards-pill:hover{background:rgba(255,255,255,0.13)}
+  .store-card-nearest:hover{box-shadow:0 14px 30px -18px rgba(20,20,25,0.6); transform:translateY(-2px)}
+  .store-card:hover{border-color:#141414 !important; transform:translateY(-2px)}
+  .menu-title:hover{color:oklch(0.47 0.075 55) !important}
+  .pickup-card:hover{border-color:#141414 !important; box-shadow:0 8px 20px -16px rgba(20,20,25,0.6)}
+  .cat-tab:hover{color:#141414 !important}
+  .plus-btn-sm:hover{background:oklch(0.47 0.075 55) !important; transform:scale(1.08)}
+  .feature-add-btn:hover{background:rgba(255,255,255,0.28)}
+  .item-row-main:hover{transform:translateX(3px)}
+  .pickup-option:hover{border-color:#141414 !important}
+  .chip-option:hover{border-color:#9a8f80 !important}
+  .glass-chip:hover{border-color:rgba(255,255,255,0.5) !important}
+  .qty-btn:hover{color:#fff}
+  .btn-add-bag:hover{filter:brightness(1.06); transform:translateY(-1px)}
+  .qty-box:hover{border-color:#141414 !important}
+  .rewards-row:hover{border-color:#141414 !important}
+  .qr-row:hover{border-color:rgba(224,201,168,0.6) !important; background:rgba(255,255,255,0.08) !important}
+  .rewards-card:hover{border-color:rgba(224,201,168,0.6) !important}
+  .keypad-key:hover{background:rgba(255,255,255,0.14)}
+  .btn-phone-submit:hover{filter:brightness(1.1)}
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/plain" id="app-source">
+
+const IMG = f => 'lune-assets/' + f;
+
+const MENU = {
+  specials: [
+    { id:'freckle', name:'The Freckle', price:14.5, meta:'MALT · GANACHE · SPRINKLES', allergens:'GLUTEN · DAIRY · EGG · SOY · MEAT', desc:"Filled with a malt sable biscuit, topped with a vanilla syrup, chocolate ganache and 100's and 1000's." },
+    { id:'everything', name:'Everything Croissant', price:13.0, meta:'HERB · CREAM CHEESE', allergens:'GLUTEN · DAIRY · EGG · SESAME · FRUCTOSE', desc:'Filled with herb paste and chive cream cheese. Finished with everything bagel seasoning.', img:IMG('everything-croissant.jpg') },
+    { id:'lamington', name:'Lamington Cruffin', price:10.5, meta:'CREAM · RASPBERRY · COCONUT', allergens:'GLUTEN · DAIRY · EGG', desc:'Filled with whipped cream and raspberry jam. Dipped in dark chocolate ganache and desiccated coconut.', img:IMG('lamington-cruffin.jpg') },
+    { id:'macca', name:'Macca Sacca', price:16.0, meta:'MACADAMIA · SALTED CARAMEL', allergens:'GLUTEN · DAIRY · EGG · NUTS · ALCOHOL · MEAT', desc:'A traditional croissant brushed with kirsch syrup, filled with macadamia frangipane and salted caramel. Topped with macadamia frangipane, macadamia halves and icing sugar.' },
+  ],
+  classics: [
+    { id:'traditional', name:'Traditional Croissant', price:7.8, meta:'72H · TRADITIONAL', allergens:'GLUTEN · DAIRY · EGG', desc:'Traditional French croissant, prepared over 3 days.' },
+    { id:'painchoc', name:'Pain au Chocolat', price:8.8, meta:'DARK CHOCOLATE', allergens:'GLUTEN · DAIRY · EGG · SOY', desc:'Traditional chocolate croissant, with two dark chocolate batons.' },
+    { id:'kouign', name:'Kouign Amann', price:10.5, meta:'CARAMELISED', allergens:'GLUTEN · DAIRY · EGG', desc:'Traditional pastry from the Bretagne region of France, laminated with sugar and baked in a buttered, sugared mold until caramelised.' },
+    { id:'morning', name:'Morning Bun', price:10.1, meta:'CINNAMON · ORANGE', allergens:'GLUTEN · DAIRY · EGG', desc:'Croissant pastry baked with a brown sugar, cinnamon and orange zest filling, and rolled in that same deliciously spiced sugar.' },
+    { id:'cheesevegemite', name:'Cheese & Vegemite', price:10.9, meta:'VEGEMITE · GRUYÈRE', allergens:'GLUTEN · DAIRY · EGG · MEAT', desc:'An escargot pastry filled with vegemite bechamel and gruyere cheese. Finished with a sprinkle of gruyere.', img:IMG('cheese-and-vegemite.jpg') },
+    { id:'hamgruyere', name:'Ham & Gruyère', price:12.8, meta:'HAM · GRUYÈRE', allergens:'GLUTEN · DAIRY · EGG · MEAT', desc:'A croissant baked fresh with a filling of shaved ham, swiss gruyere & seeded mustard.', img:IMG('ham-and-gruyere.jpg') },
+    { id:'lemoncruffin', name:'Lemon Curd Cruffin', price:10.2, meta:'LEMON CURD · CITRUS', allergens:'GLUTEN · DAIRY · EGG', desc:'House made lemon curd, citrus sugar and candied lemon zest.', img:IMG('lemon-curd-cruffin.jpg') },
+    { id:'almond', name:'Almond Croissant', price:13.0, meta:'FRANGIPANE · NUTS', allergens:'GLUTEN · DAIRY · EGG · NUTS · ALCOHOL', desc:'The original Croissant aux Amandes, prepared with almond frangipane & garnished with a healthy amount of flaked almonds.', img:IMG('almond-croissant.jpg') },
+  ],
+  boxes: [
+    { id:'box6trad', name:'Box of 6 Traditional', price:46.8, meta:'BOX OF 6', allergens:'GLUTEN · DAIRY · EGG', desc:'Box of 6 x traditional French croissant, prepared over 3 days.', img:IMG('box-of-6-traditional.jpg') },
+    { id:'mixedbox', name:'Mixed Box of 6 Classics', price:63.1, meta:'MIXED · BOX OF 6', allergens:'GLUTEN · DAIRY · EGG · NUTS · MEAT', desc:'Traditional Croissant, Pain au Chocolat, Lemon Cruffin, Kouign Amann, Almond Croissant, Ham & Gruyere.' },
+  ],
+  coffee: [
+    { id:'filter', name:'Filter Coffee', price:5.2, meta:'FILTER', allergens:'—', desc:'Seasonal filter, brewed to order.', drink:true },
+    { id:'longblack', name:'Long Black', price:5.9, meta:'BLACK', allergens:'—', desc:'Made to order.', drink:true },
+    { id:'espresso', name:'Single Espresso', price:5.0, meta:'ESPRESSO', allergens:'—', desc:'Made to order.', drink:true },
+    { id:'doubleespresso', name:'Double Espresso', price:5.6, meta:'ESPRESSO', allergens:'—', desc:'Made to order.', drink:true },
+    { id:'white', name:'White Coffee', price:5.9, meta:'WHITE', allergens:'DAIRY (SUB ALT MILK)', desc:'Made to order.', drink:true, milk:true },
+    { id:'latte', name:'Latte', price:5.9, meta:'MILK', allergens:'DAIRY (SUB ALT MILK)', desc:'Made to order.', drink:true, milk:true },
+    { id:'cappuccino', name:'Cappuccino', price:5.9, meta:'MILK', allergens:'DAIRY (SUB ALT MILK)', desc:'Made to order.', drink:true, milk:true },
+    { id:'flatwhite', name:'Flat White', price:5.9, meta:'MILK', allergens:'DAIRY (SUB ALT MILK)', desc:'Made to order.', drink:true, milk:true },
+    { id:'piccolo', name:'Piccolo', price:5.6, meta:'MILK', allergens:'DAIRY (SUB ALT MILK)', desc:'Made to order.', drink:true, milk:true },
+    { id:'magic', name:'Magic', price:5.9, meta:'MILK', allergens:'DAIRY (SUB ALT MILK)', desc:'Made to order.', drink:true, milk:true },
+    { id:'shortmac', name:'Short Macchiato', price:5.6, meta:'MILK', allergens:'DAIRY (SUB ALT MILK)', desc:'Made to order.', drink:true, milk:true },
+    { id:'mocha', name:'Mocha', price:6.8, meta:'CHOC · MILK', allergens:'DAIRY (SUB ALT MILK)', desc:'Made to order.', drink:true, milk:true },
+    { id:'dirtymatcha', name:'Dirty Matcha', price:7.6, meta:'MATCHA · ESPRESSO', allergens:'DAIRY (SUB ALT MILK)', desc:'Made to order.', drink:true, milk:true },
+    { id:'dirtychai', name:'Dirty Chai', price:6.8, meta:'CHAI · ESPRESSO', allergens:'DAIRY (SUB ALT MILK)', desc:'Made to order.', drink:true, milk:true },
+    { id:'americano', name:'Americano', price:5.9, meta:'BLACK', allergens:'—', desc:'Made to order.', drink:true },
+  ],
+  drinks: [
+    { id:'hotchoc', name:'Hot Chocolate', price:6.2, meta:'CHOCOLATE', allergens:'DAIRY (SUB ALT MILK)', desc:'Made to order.', drink:true, milk:true },
+    { id:'kidshotchoc', name:'Kids Hot Chocolate', price:5.7, meta:'KIDS', allergens:'DAIRY (SUB ALT MILK)', desc:'Made to order.', drink:true, milk:true },
+    { id:'matcha', name:'Matcha', price:6.8, meta:'CEREMONIAL', allergens:'DAIRY (SUB ALT MILK)', desc:'Whisked to order.', drink:true, milk:true },
+    { id:'chai', name:'Chai', price:6.2, meta:'SPICED', allergens:'DAIRY (SUB ALT MILK)', desc:'Made to order.', drink:true, milk:true },
+    { id:'babycino', name:'Babycino', price:1.6, meta:'KIDS', allergens:'DAIRY (SUB ALT MILK)', desc:'For the little ones.', drink:true, milk:true },
+    { id:'icedlongblack', name:'Iced Long Black', price:6.7, meta:'ICED · BLACK', allergens:'—', desc:'Served over ice.', drink:true },
+    { id:'icedlatte', name:'Iced Latte', price:6.7, meta:'ICED · MILK', allergens:'DAIRY (SUB ALT MILK)', desc:'Served over ice.', drink:true, milk:true },
+    { id:'icedchoc', name:'Iced Chocolate', price:7.0, meta:'ICED · CHOC', allergens:'DAIRY (SUB ALT MILK)', desc:'Served over ice.', drink:true, milk:true },
+    { id:'icedoatchoc', name:'Iced Oat Chocolate', price:8.3, meta:'ICED · OAT', allergens:'OAT', desc:'Served over ice with oat milk.', drink:true },
+    { id:'icedmocha', name:'Iced Mocha', price:7.6, meta:'ICED · CHOC', allergens:'DAIRY (SUB ALT MILK)', desc:'Served over ice.', drink:true, milk:true },
+    { id:'icedoatmocha', name:'Iced Oat Mocha', price:8.4, meta:'ICED · OAT', allergens:'OAT', desc:'Served over ice with oat milk.', drink:true },
+    { id:'icedmatcha', name:'Iced Matcha', price:7.6, meta:'ICED · MATCHA', allergens:'DAIRY (SUB ALT MILK)', desc:'Served over ice.', drink:true, milk:true },
+    { id:'iceddirtymatcha', name:'Iced Dirty Matcha', price:8.4, meta:'ICED · MATCHA', allergens:'DAIRY (SUB ALT MILK)', desc:'Served over ice.', drink:true, milk:true },
+    { id:'icedchai', name:'Iced Chai', price:7.0, meta:'ICED · SPICED', allergens:'DAIRY (SUB ALT MILK)', desc:'Served over ice.', drink:true, milk:true },
+    { id:'iceddirtychai', name:'Iced Dirty Chai', price:7.8, meta:'ICED · CHAI', allergens:'DAIRY (SUB ALT MILK)', desc:'Served over ice.', drink:true, milk:true },
+    { id:'icedfilter', name:'Iced Filter', price:6.0, meta:'ICED · FILTER', allergens:'—', desc:'Served over ice.', drink:true },
+  ],
+  retail: [
+    { id:'tote', name:'Double Box Tote Bag', price:75.0, meta:'CANVAS TOTE', allergens:'—', desc:'Heavy duty cotton canvas tote designed to fit two Lune pastry boxes. Features inner pocket with zipper and key loop.', img:IMG('double-box-tote-bag.jpg') },
+    { id:'candlematch', name:'Lune Candle + Match', price:65.0, meta:'CANDLE · MATCH', allergens:'—', desc:'Lune candle paired with a box of matches.', img:IMG('lune-candle-and-match.jpg') },
+    { id:'gifting', name:'Gifting Card', price:0, meta:'GIFT NOTE', allergens:'—', desc:'A blank card for you to write on when gifting a box of croissants.', img:IMG('gifting-card.jpg') },
+    { id:'seasonalfilter', name:'Seasonal Filter 200g', price:20.0, meta:'BEANS · 200G', allergens:'—', desc:'Seasonal filter beans, 200g.' },
+    { id:'maple200', name:'Maple 200g', price:16.0, meta:'BEANS · 200G', allergens:'—', desc:'Maple blend beans, 200g.' },
+    { id:'maple1kg', name:'Maple 1kg', price:65.0, meta:'BEANS · 1KG', allergens:'—', desc:'Maple blend beans, 1kg.' },
+    { id:'tin30', name:'Lune 30g Tin — Wakaba', price:50.0, meta:'MATCHA · 30G', allergens:'—', desc:'Ceremonial grade Wakaba matcha, 30g tin.' },
+    { id:'tin80', name:'Lune 80g Tin — Pro', price:35.0, meta:'MATCHA · 80G', allergens:'—', desc:'Matcha for professional, 80g tin.' },
+    { id:'fressko', name:'Lune Fressko — Large', price:45.0, meta:'REUSABLE CUP', allergens:'—', desc:'Insulated ceramic reusable coffee cup.' },
+    { id:'journal', name:'Lune Photo Journal', price:20.0, meta:'48 PAGES', allergens:'—', desc:'A curated 48-page visual journey exploring never-before-seen moments from the first 10 years of Lune.' },
+    { id:'pin', name:'Lune Pin', price:10.0, meta:'ENAMEL PIN', allergens:'—', desc:'Lune enamel pin.' },
+    { id:'matches', name:'Lune Matches', price:2.0, meta:'MATCHES', allergens:'—', desc:'A box of Lune matches.' },
+  ],
+};
+const CATS = [['specials','MONTHLY SPECIALS'],['classics','CLASSICS'],['boxes','BOXES'],['coffee','COFFEE'],['drinks','DRINKS'],['retail','RETAIL']];
+const CAT_LABEL = Object.fromEntries(CATS);
+const DRINK_IDS = [...MENU.coffee, ...MENU.drinks].map(d=>d.id);
+const MILK_UP = 0.6;
+const money = n => '$' + n.toFixed(2);
+const priceStr = p => p > 0 ? money(p) : 'FREE';
+const GREETINGS = ["Hey {n}","G'day {n}","Morning, {n}","Welcome back, {n}","Good to see you, {n}","Look who it is — {n}","The usual, {n}?","Fancy seeing you, {n}"];
+const LAST_ORDER = [
+  { id:'almond', qty:1 },
+  { id:'latte', qty:1, milk:'Full cream' },
+];
+const DAYS = ['Today','Fri 25','Sat 26','Sun 27','Mon 28','Tue 29'];
+const TIMES = ['8:00','8:30','9:00','9:30','10:00','10:30','11:00','11:30','12:00','12:30'];
+
+function Starfield() {
+  const layer = (grad, size, anim) => (
+    <div style={{position:'absolute', inset:'-40px', backgroundImage:grad, backgroundSize:size, animation:anim, pointerEvents:'none'}}></div>
+  );
+  return (
+    <div style={{position:'absolute', inset:0, overflow:'hidden', pointerEvents:'none'}}>
+      {layer('radial-gradient(1.1px 1.1px at 12% 20%, rgba(255,255,255,0.4), transparent), radial-gradient(1.1px 1.1px at 62% 44%, rgba(255,255,255,0.32), transparent), radial-gradient(1.1px 1.1px at 88% 74%, rgba(255,255,255,0.3), transparent)', '300px 300px', 'lune-star-far 16s linear infinite')}
+      {layer('radial-gradient(1.5px 1.5px at 22% 34%, rgba(255,255,255,0.55), transparent), radial-gradient(1.3px 1.3px at 74% 18%, rgba(255,255,255,0.44), transparent), radial-gradient(1.5px 1.5px at 48% 78%, rgba(255,255,255,0.44), transparent)', '240px 240px', 'lune-star-mid 10s linear infinite')}
+      {layer('radial-gradient(1.8px 1.8px at 30% 30%, rgba(255,255,255,0.62), transparent), radial-gradient(1.8px 1.8px at 82% 60%, rgba(255,255,255,0.5), transparent), radial-gradient(1.8px 1.8px at 58% 88%, rgba(255,255,255,0.46), transparent)', '160px 160px', 'lune-star-near 6s linear infinite')}
+    </div>
+  );
+}
+
+const ACC = 'oklch(0.47 0.075 55)';
+
+class App extends React.Component {
+  state = {
+    screen:'splash', category:'specials', store:null,
+    pickupMode:'asap', day:'Today', time:'8:00',
+    active:null, qty:1, size:'Regular', temp:'Hot', milk:'Full cream',
+    cart:[], name:'', tip:0, tipKey:'0', orderNo:null,
+    toast:null, trackStep:0, fav:{}, featureIdx:0,
+    user:'', guest:false, phone:'', otp:'', rewards:4.5, applyRewards:false,
+    wallet:0, qrOpen:false, menuScrolled:false, prevScreen:'store', greetIdx:0, reorderShown:true, tabIndicator:null,
+  };
+
+  componentWillUnmount(){ clearTimeout(this._toast); clearTimeout(this._k1); clearTimeout(this._k2); clearTimeout(this._otpT); clearTimeout(this._splashT); clearTimeout(this._launchT); document.removeEventListener('keydown', this._onKeyActivate); }
+
+  componentDidMount(){
+    this._onKeyActivate = (e)=>{
+      if((e.key==='Enter' || e.key===' ') && e.target && e.target.classList && e.target.classList.contains('clickable')){
+        e.preventDefault();
+        e.target.click();
+      }
+    };
+    document.addEventListener('keydown', this._onKeyActivate);
+    this._a11yPass();
+  }
+  componentDidUpdate(){
+    this._a11yPass();
+    if (this.state.screen==='menu' && this._tabRowRef && this._tabRefs) {
+      const activeEl = this._tabRefs[this.state.category];
+      if (activeEl) {
+        const rowRect = this._tabRowRef.getBoundingClientRect();
+        const elRect = activeEl.getBoundingClientRect();
+        const left = elRect.left - rowRect.left + this._tabRowRef.scrollLeft;
+        const width = elRect.width;
+        const cur = this.state.tabIndicator;
+        if (!cur || Math.abs(cur.left-left)>0.5 || Math.abs(cur.width-width)>0.5) {
+          this.setState({ tabIndicator: { left, width } });
+        }
+      }
+    }
+  }
+  _a11yPass(){
+    document.querySelectorAll('.clickable').forEach(el=>{
+      if(!el.hasAttribute('tabindex')) el.setAttribute('tabindex','0');
+      if(!el.hasAttribute('role')) el.setAttribute('role','button');
+    });
+  }
+
+  magnetic(e){
+    const el = e.currentTarget;
+    const r = el.getBoundingClientRect();
+    const mx = (e.clientX - (r.left + r.width/2)) * 0.15;
+    const my = (e.clientY - (r.top + r.height/2)) * 0.15;
+    el.style.transform = 'translate(' + mx.toFixed(1) + 'px,' + my.toFixed(1) + 'px)';
+  }
+  magneticReset(e){ e.currentTarget.style.transform = ''; }
+
+  toggleReorder(){ this.setState({ reorderShown:!this.state.reorderShown }); }
+  onMenuScroll(e){ const on=e.target.scrollTop>28; if(on!==this.state.menuScrolled) this.setState({ menuScrolled:on }); }
+  goBack(){ this.setState({ screen:this.state.prevScreen||'store' }); }
+  openQr(){ this.setState({ qrOpen:true }); }
+  closeQr(){ this.setState({ qrOpen:false }); }
+  logout(){ clearTimeout(this._splashT); this.setState({ screen:'login', user:'', guest:false, phone:'', otp:'', cart:[], name:'', applyRewards:false, qrOpen:false }); }
+  qrSrc(){
+    if(this._qr) return this._qr;
+    const N=25, cell=8, q=2, size=(N+2*q)*cell;
+    let seed=20240815; const rnd=()=>{ seed=(seed*1103515245+12345)&0x7fffffff; return seed/0x7fffffff; };
+    const fin=(r,c,br,bc)=>{ const rr=r-br, cc=c-bc; if(rr<0||rr>6||cc<0||cc>6) return null; const edge=rr===0||rr===6||cc===0||cc===6; const inner=rr>=2&&rr<=4&&cc>=2&&cc<=4; return edge||inner; };
+    let rects='';
+    for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+      let on = fin(r,c,0,0); if(on===null) on=fin(r,c,0,N-7); if(on===null) on=fin(r,c,N-7,0);
+      if(on===null) on = rnd()>0.52;
+      if(on) rects+='<rect x="'+((c+q)*cell)+'" y="'+((r+q)*cell)+'" width="'+cell+'" height="'+cell+'"/>';
+    }
+    const svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'"><rect width="'+size+'" height="'+size+'" fill="#f2ede6"/><g fill="#141414">'+rects+'</g></svg>';
+    this._qr='data:image/svg+xml,'+encodeURIComponent(svg);
+    return this._qr;
+  }
+  onFeatureScroll(e){ const el=e.target; const i=Math.round(el.scrollLeft/(el.clientWidth*0.84+14)); if(i!==this.state.featureIdx) this.setState({ featureIdx:i }); }
+  toggleFav(){ const a=this.state.active; if(!a) return; const fav={...this.state.fav}; fav[a.id]=!fav[a.id]; this.setState({ fav }); }
+
+  pressPhone(k){ let p=this.state.phone; if(k==='⌫') p=p.slice(0,-1); else if(p.length<9) p=p+k; this.setState({ phone:p }); }
+  submitPhone(){ if(this.state.phone.length>=9) this.setState({ screen:'otp', otp:'' }); }
+  pressOtp(k){ let o=this.state.otp; if(k==='⌫') o=o.slice(0,-1); else if(o.length<4) o=o+k; this.setState({ otp:o }); if(o.length===4){ clearTimeout(this._otpT); this._otpT=setTimeout(()=>this.loginSuccess(), 480); } }
+  resendOtp(){ this.showToast('New code sent'); }
+  loginSuccess(){ this.setState({ screen:'store', user:'Keith', guest:false, name:'Keith', otp:'', greetIdx:Math.floor(Math.random()*GREETINGS.length) }); }
+  continueGuest(){ this.setState({ screen:'store', guest:true, user:'', name:'' }); }
+  toggleRewards(){ this.setState({ applyRewards:!this.state.applyRewards }); }
+  appliedRewardsNum(){ const s=this.state; if(s.guest || !s.user || !s.applyRewards) return 0; return Math.min(s.rewards, this.cartTotalNum()+(s.tip||0)); }
+  reorderAdd(row){ const item=this._findItem(row.id); if(item) this.addLine(item, row.qty||1, row.size||'Regular', row.temp||'Hot', row.milk||'Full cream'); }
+  _findItem(id){ for(const k in MENU){ const f=MENU[k].find(x=>x.id===id); if(f) return f; } return null; }
+
+  go(screen){ this.setState(s=>{ const p={ prevScreen:s.screen, screen }; if(screen==='menu') p.menuScrolled=false; if(screen==='store') p.greetIdx=Math.floor(Math.random()*GREETINGS.length); return p; }); }
+  showToast(msg){ clearTimeout(this._toast); this.setState({ toast:msg }); this._toast=setTimeout(()=>this.setState({ toast:null }), 1700); }
+
+  unitPrice(item, size, milk){
+    let p = item.price;
+    if(item.drink && item.milk && milk && milk!=='Full cream') p += MILK_UP;
+    return p;
+  }
+  variantLabel(item, size, temp, milk){ return (item.drink && item.milk && milk && milk!=='Full cream') ? milk : ''; }
+  openItem(item){ this.setState({ screen:'item', active:item, qty:1, size:'Regular', temp:'Hot', milk:'Full cream' }); }
+  quickAdd(item){ if(item.drink && item.milk){ this.openItem(item); return; } this.addLine(item, 1, 'Regular', 'Hot', 'Full cream'); }
+  addActive(){ const s=this.state; this.addLine(s.active, s.qty, s.size, s.temp, s.milk); this.setState({ screen:'menu' }); }
+  addLine(item, qty, size, temp, milk){
+    const key = item.id + '|' + this.variantLabel(item,size,temp,milk);
+    const cart = this.state.cart.slice();
+    const ex = cart.find(l=>l.key===key);
+    if(ex){ ex.qty += qty; } else {
+      cart.push({ key, id:item.id, name:item.name, unit:this.unitPrice(item,size,milk), qty, variant:this.variantLabel(item,size,temp,milk) });
+    }
+    this.setState({ cart });
+    this.showToast('Added ' + item.name);
+  }
+  changeLine(key, d){
+    let cart = this.state.cart.slice();
+    const l = cart.find(x=>x.key===key);
+    if(!l) return;
+    l.qty += d;
+    if(l.qty<=0) cart = cart.filter(x=>x.key!==key);
+    this.setState({ cart });
+  }
+  removeLine(key){ this.setState({ cart:this.state.cart.filter(x=>x.key!==key) }); }
+  cartTotalNum(){ return this.state.cart.reduce((a,l)=>a+l.unit*l.qty,0); }
+  cartCountNum(){ return this.state.cart.reduce((a,l)=>a+l.qty,0); }
+  payTotalNum(){ return Math.max(0, this.cartTotalNum() + (this.state.tip||0) - this.appliedRewardsNum()); }
+
+  placeOrder(){
+    if(this.state.cart.length===0) return;
+    clearTimeout(this._launchT);
+    this.setState({ screen:'launching', orderNo:'LN-' + Math.floor(1000+Math.random()*9000) });
+    this._launchT = setTimeout(()=>this.setState({ screen:'confirm' }), 2050);
+  }
+  startTracking(){
+    clearTimeout(this._k1); clearTimeout(this._k2);
+    this.setState({ screen:'track', trackStep:0 });
+    this._k1 = setTimeout(()=>this.setState({ trackStep:1 }), 2600);
+    this._k2 = setTimeout(()=>this.setState({ trackStep:2 }), 5400);
+  }
+  reset(){
+    clearTimeout(this._k1); clearTimeout(this._k2); clearTimeout(this._launchT);
+    this.setState({ screen:'store', category:'specials', store:null, pickupMode:'asap', day:'Today', time:'8:00', active:null, qty:1, size:'Regular', temp:'Hot', milk:'Full cream', cart:[], name:this.state.user||'', tip:0, tipKey:'0', orderNo:null, toast:null, trackStep:0, applyRewards:false, featureIdx:0 });
+  }
+
+  chip(active){
+    return active
+      ? { background:ACC, color:'#f4f4f2', borderColor:ACC }
+      : { background:'#fff', color:'#6b6459', borderColor:'#e0dfda' };
+  }
+  glassChip(active){
+    return active
+      ? { background:'#f2ede6', color:'#1a140e', borderColor:'#f2ede6' }
+      : { background:'rgba(255,255,255,0.07)', color:'#e0d2bf', borderColor:'rgba(255,255,255,0.22)' };
+  }
+
+  imgEl(it, style){
+    return <img src={it.img} alt={it.name} className="lune-photo" style={Object.assign({ width:'100%', height:'100%', objectFit:'cover', display:'block' }, style||{})}/>;
+  }
+  thumbEl(it){
+    if(it && it.img) return this.imgEl(it);
+    return (
+      <div style={{ width:'100%', height:'100%', background:'#0b0805', display:'flex', alignItems:'center', justifyContent:'center' }}>
+        <img src={IMG('lune-rocket-white.png')} alt="" style={{ width:'62%', height:'62%', objectFit:'contain', display:'block' }}/>
+      </div>
+    );
+  }
+
+  render(){
+    const s = this.state;
+    const storeData = [
+      { key:'fitzroy', name:'Fitzroy', addr:'119 ROSE ST, FITZROY', dist:'1.2 KM', status:'OPEN TILL 2PM' },
+      { key:'cbd', name:'Melbourne CBD', addr:'RUSSELL ST & FLINDERS LN', dist:'2.9 KM', status:'OPEN TILL 3PM' },
+      { key:'hawthorn', name:'Hawthorn', addr:'GLENFERRIE RD, HAWTHORN', dist:'6.1 KM', status:'OPEN TILL 3PM' },
+      { key:'stkilda', name:'St Kilda', addr:'ACLAND ST, ST KILDA', dist:'7.4 KM', status:'OPEN TILL 3PM' },
+      { key:'brisbane', name:'Brisbane CBD', addr:'QUEEN ST, BRISBANE', dist:'1,370 KM', status:'OPEN TILL 2PM' },
+    ].map(st=>({ ...st, select:()=>this.setState({ store:st, screen:'menu' }) }));
+    const nearest = storeData[0];
+    const others = storeData.slice(1);
+    const store = s.store || nearest;
+
+    const pickupShort = s.pickupMode==='asap' ? 'ASAP ~15min' : (s.day + ' ' + s.time);
+    const pickupFull = s.pickupMode==='asap' ? 'Today · ASAP (~15 min)' : (s.day + ' · ' + s.time + ' am');
+
+    const isMember = !s.guest && !!s.user;
+    const isGuest = s.guest;
+    const ms = s.menuScrolled;
+    const darkScreens = ['store','confirm','track','item','splash','login','otp','rewards','profile','launching'].includes(s.screen);
+    const initial = (s.user||'L').trim().charAt(0).toUpperCase();
+    const now = new Date().getHours();
+    const greetingKicker = now<12 ? 'GOOD MORNING' : (now<17 ? 'GOOD AFTERNOON' : 'GOOD EVENING');
+    const greeting = isMember ? GREETINGS[s.greetIdx % GREETINGS.length].replace('{n}', s.user) : 'Welcome to Lune';
+    const rewardsStr = money(s.rewards);
+    const walletStr = money(s.wallet);
+
+    const sub = this.cartTotalNum();
+    const cart = s.cart.map(l=>({
+      ...l, total:money(l.unit*l.qty), thumb:this.thumbEl(this._findItem(l.id)),
+    }));
+    const hasDrink = s.cart.some(l=>DRINK_IDS.includes(l.id));
+    const appliedRewards = this.appliedRewardsNum();
+    const canPay = s.cart.length>0;
+
+    const onKey = s.screen==='otp' ? (k)=>this.pressOtp(k) : (k)=>this.pressPhone(k);
+    const keypad = ['1','2','3','4','5','6','7','8','9','','0','⌫'];
+    const pm = s.phone.padEnd(9,'•');
+    const phoneMasked = pm.slice(0,1)+' '+pm.slice(1,5)+' '+pm.slice(5,9);
+    const phoneReady = s.phone.length>=9;
+    const otpBoxes = [0,1,2,3].map(i=>({ char:s.otp[i]||'', border: i===s.otp.length ? 'rgba(224,201,168,0.8)' : 'rgba(255,255,255,0.16)' }));
+
+    const statusBg = darkScreens ? 'transparent' : '#f4f4f2';
+    const statusFg = darkScreens ? '#f2f1ee' : '#141414';
+
+    return (
+      <div style={{width:390, background:'#000', borderRadius:50, padding:12, boxShadow:'0 40px 90px -30px rgba(20,20,25,0.6)'}}>
+        <div style={{position:'relative', width:366, height:792, background:'#f4f4f2', borderRadius:38, overflow:'hidden', color:'#141414'}}>
+
+          <div style={{position:'absolute', top:0, left:0, right:0, zIndex:40, display:'flex', justifyContent:'space-between', alignItems:'center', padding:'14px 26px 8px', fontFamily:"'JetBrains Mono',monospace", fontSize:12, background:statusBg, color:statusFg}}>
+            <span>9:41</span><span style={{width:52, height:8, background:statusFg, borderRadius:20, opacity:0.85}}></span><span>&#9679;</span>
+          </div>
+
+          {s.screen==='splash' &&
+            <div className="clickable" onClick={()=>this.go('login')} style={{height:792, background:'#0b0805', color:'#f2f1ee', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', position:'relative', overflow:'hidden', animation:'lune-enter .4s ease both'}}>
+              <Starfield/>
+              <div style={{position:'relative', display:'flex', flexDirection:'column', alignItems:'center', animation:'lune-rise 1s cubic-bezier(.16,.7,.2,1) both'}}>
+                <img src={IMG('lune-rocket-white.png')} alt="" style={{width:150, height:150, objectFit:'contain', display:'block', filter:'drop-shadow(0 0 40px rgba(170,130,90,0.55))', animation:'lune-fly 6s ease-in-out 1s infinite'}}/>
+                <img src={IMG('lune-wordmark.png')} alt="LUNE" style={{width:238, height:'auto', display:'block', marginTop:6}}/>
+              </div>
+              <div style={{position:'absolute', bottom:52, fontFamily:"'JetBrains Mono',monospace", fontSize:16, letterSpacing:'0.16em', color:'#6b6156', animation:'lune-twinkle 1.8s ease-in-out infinite'}}>TAP TO BEGIN</div>
+            </div>
+          }
+
+          {s.screen==='login' &&
+            <div style={{height:792, background:'#0b0805', color:'#f2f1ee', display:'flex', flexDirection:'column', padding:'64px 26px 30px', position:'relative', overflow:'hidden', animation:'lune-enter .32s ease both'}}>
+              <Starfield/>
+              <div style={{position:'relative', display:'flex', flexDirection:'column', height:'100%'}}>
+                <img src={IMG('lune-rocket-white.png')} alt="" style={{width:42, height:42, objectFit:'contain', display:'block'}}/>
+                <h2 style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:27, letterSpacing:'-0.02em', margin:'24px 0 8px'}}>Enter your mobile</h2>
+                <p style={{fontSize:13, lineHeight:1.55, color:'#c3b8ab', margin:0, maxWidth:250}}>We'll text you a code to verify. No password, no fuss.</p>
+                <div style={{display:'flex', alignItems:'center', gap:12, marginTop:30, borderBottom:'1.5px solid rgba(255,255,255,0.28)', paddingBottom:14}}>
+                  <span style={{fontFamily:"'JetBrains Mono',monospace", fontSize:20, color:'#c3b8ab'}}>+61</span>
+                  <span style={{fontFamily:"'JetBrains Mono',monospace", fontSize:20, letterSpacing:'0.08em'}}>{phoneMasked}</span>
+                </div>
+                <div style={{marginTop:'auto'}}>
+                  <div style={{display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:9, marginBottom:16}}>
+                    {keypad.map((d,i)=>(
+                      <div key={i} onClick={d==='' ? undefined : ()=>onKey(d)} className={d==='' ? '' : 'keypad-key'} style={{height:52, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'JetBrains Mono',monospace", fontSize:22, borderRadius:14, cursor: d==='' ? 'default' : 'pointer', background: d==='' ? 'transparent' : 'rgba(255,255,255,0.06)', color:'#f2ede6'}}>{d}</div>
+                    ))}
+                  </div>
+                  <div className="clickable btn-phone-submit" onClick={()=>this.submitPhone()} style={{textAlign:'center', background: phoneReady ? '#f2ede6' : 'rgba(255,255,255,0.10)', color: phoneReady ? '#17120d' : '#6b6156', borderRadius:14, padding:17, fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer'}}>SEND CODE →</div>
+                  <div className="clickable link-muted" onClick={()=>this.continueGuest()} style={{textAlign:'center', marginTop:14, fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:'#9a8f80', cursor:'pointer'}}>CONTINUE AS GUEST</div>
+                </div>
+              </div>
+            </div>
+          }
+
+          {s.screen==='otp' &&
+            <div style={{height:792, background:'#0b0805', color:'#f2f1ee', display:'flex', flexDirection:'column', padding:'64px 26px 30px', position:'relative', overflow:'hidden', animation:'lune-enter .32s ease both'}}>
+              <Starfield/>
+              <div style={{position:'relative', display:'flex', flexDirection:'column', height:'100%'}}>
+                <div className="clickable link-muted" onClick={()=>this.go('login')} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'#9a8f80', cursor:'pointer'}}>‹ BACK</div>
+                <img src={IMG('lune-rocket-white.png')} alt="" style={{width:42, height:42, objectFit:'contain', display:'block', marginTop:24}}/>
+                <h2 style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:27, letterSpacing:'-0.02em', margin:'16px 0 8px'}}>Verify your number</h2>
+                <p style={{fontSize:13, lineHeight:1.55, color:'#c3b8ab', margin:0}}>Enter the 4-digit code we sent to<br/><span style={{color:'#f2ede6'}}>+61 {phoneMasked}</span></p>
+                <div style={{display:'flex', gap:12, marginTop:28}}>
+                  {otpBoxes.map((box,i)=>(
+                    <div key={i} style={{flex:1, height:64, borderRadius:14, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'JetBrains Mono',monospace", fontSize:26, background:'rgba(255,255,255,0.06)', border:'1.5px solid '+box.border, color:'#f2ede6'}}>{box.char}</div>
+                  ))}
+                </div>
+                <div className="clickable link-muted" onClick={()=>this.resendOtp()} style={{marginTop:18, fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:'#9a8f80', cursor:'pointer', alignSelf:'flex-start'}}>DIDN'T GET IT? RESEND CODE</div>
+                <div style={{marginTop:'auto'}}>
+                  <div style={{display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:9}}>
+                    {keypad.map((d,i)=>(
+                      <div key={i} onClick={d==='' ? undefined : ()=>onKey(d)} className={d==='' ? '' : 'keypad-key'} style={{height:52, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'JetBrains Mono',monospace", fontSize:22, borderRadius:14, cursor: d==='' ? 'default' : 'pointer', background: d==='' ? 'transparent' : 'rgba(255,255,255,0.06)', color:'#f2ede6'}}>{d}</div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+
+          {s.screen==='store' &&
+            <div className="lune-scroll" style={{height:792, overflowY:'auto', animation:'lune-enter .32s ease both'}}>
+              <div style={{background:'#0b0805', color:'#f2f1ee', padding:'66px 28px 60px', position:'relative', overflow:'hidden'}}>
+                <Starfield/>
+                <div style={{position:'relative'}}>
+                  <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start'}}>
+                    <img src={IMG('lune-rocket-white.png')} alt="" style={{width:46, height:46, objectFit:'contain', display:'block'}}/>
+                    {isMember &&
+                      <div style={{display:'flex', alignItems:'center', gap:9}}>
+                        <span className="clickable icon-btn-dark" onClick={()=>this.openQr()} style={{width:38, height:38, borderRadius:11, flexShrink:0, background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.16)', display:'flex', alignItems:'center', justifyContent:'center', color:'#f2ede6', cursor:'pointer'}}>
+                          <svg width="17" height="17" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><rect x="1.2" y="1.2" width="5" height="5" rx="1"></rect><rect x="9.8" y="1.2" width="5" height="5" rx="1"></rect><rect x="1.2" y="9.8" width="5" height="5" rx="1"></rect><path d="M9.8 9.8h2.2v2.2M14.8 9.8v5M9.8 14.8h5"></path></svg>
+                        </span>
+                        <span className="clickable avatar-btn" onClick={()=>this.go('profile')} style={{width:38, height:38, borderRadius:'50%', flexShrink:0, background:'linear-gradient(145deg,#3a2a1c,#17120d)', border:'1px solid rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:15, color:'#f2ede6', cursor:'pointer'}}>{initial}</span>
+                      </div>
+                    }
+                  </div>
+                  <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10.5, letterSpacing:'0.16em', color:'#9a8f80', marginTop:40}}>{greetingKicker}</div>
+                  <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:33, letterSpacing:'-0.02em', marginTop:8}}>{greeting}</div>
+                  {isMember &&
+                    <React.Fragment>
+                      <p style={{fontSize:13, lineHeight:1.55, color:'#c3b8ab', margin:'12px 0 0', maxWidth:250}}>Ready when you are — choose a store and we'll have it fresh.</p>
+                      <div className="clickable rewards-pill" onClick={()=>this.go('rewards')} style={{marginTop:20, display:'inline-flex', alignItems:'center', gap:11, background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.16)', borderRadius:30, padding:'9px 14px 9px 11px', cursor:'pointer', backdropFilter:'blur(8px)'}}>
+                        <img src={IMG('lune-rocket-white.png')} alt="" style={{width:20, height:20, objectFit:'contain', display:'block'}}/>
+                        <span style={{fontFamily:"'JetBrains Mono',monospace", fontSize:11.5, color:'#f2ede6'}}><span style={{color:'#e0c9a8'}}>{rewardsStr}</span> in Lune Rewards</span>
+                        <span style={{color:'#9a8f80', fontSize:15}}>›</span>
+                      </div>
+                    </React.Fragment>
+                  }
+                  {isGuest &&
+                    <p style={{fontSize:13, lineHeight:1.6, color:'#c3b8ab', margin:'12px 0 0', maxWidth:250}}>Pre-order for pickup. Skip the queue, collect fresh.</p>
+                  }
+                </div>
+              </div>
+
+              <div style={{padding:'22px 24px 0'}}>
+                <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:12}}>
+                  <span style={{position:'relative', width:8, height:8, flexShrink:0}}>
+                    <span style={{position:'absolute', inset:0, borderRadius:'50%', background:ACC, animation:'lune-ping 1.8s ease-out infinite'}}></span>
+                  </span>
+                  <span style={{fontFamily:"'JetBrains Mono',monospace", fontSize:11, letterSpacing:'0.14em', color:'#a8a297'}}>BASED ON YOUR LOCATION</span>
+                </div>
+                <div className="clickable store-card-nearest" onClick={nearest.select} style={{border:'1.5px solid #141414', borderRadius:14, padding:18, display:'flex', justifyContent:'space-between', alignItems:'center', cursor:'pointer', background:'#fff'}}>
+                  <div>
+                    <div style={{display:'flex', alignItems:'center', gap:8}}>
+                      <span style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:18}}>{nearest.name}</span>
+                      <span style={{fontFamily:"'JetBrains Mono',monospace", fontSize:9, letterSpacing:'0.1em', background:'#141414', color:'#f4f4f2', padding:'3px 7px', borderRadius:4}}>NEAREST</span>
+                    </div>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10.5, color:'#8a8375', marginTop:6}}>{nearest.addr}</div>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10.5, color:ACC, marginTop:6}}>{nearest.dist} AWAY · {nearest.status}</div>
+                  </div>
+                  <div style={{fontSize:20, color:'#141414'}}>›</div>
+                </div>
+                <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:11, letterSpacing:'0.14em', color:'#a8a297', margin:'26px 0 12px'}}>OTHER STORES</div>
+                <div style={{display:'flex', flexDirection:'column', gap:12}}>
+                  {others.map(store2=>(
+                    <div key={store2.key} className="clickable store-card" onClick={store2.select} style={{border:'1px solid #e0dfda', borderRadius:14, padding:'16px 18px', display:'flex', justifyContent:'space-between', alignItems:'center', cursor:'pointer', background:'#fff'}}>
+                      <div>
+                        <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:16}}>{store2.name}</div>
+                        <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10.5, color:'#8a8375', marginTop:4}}>{store2.addr}</div>
+                      </div>
+                      <div style={{textAlign:'right'}}>
+                        <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10.5, color:'#8a8375'}}>{store2.dist}</div>
+                        <div style={{fontSize:16, color:'#a8a297', marginTop:2}}>›</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          }
+
+          {s.screen==='menu' && (()=>{
+            const cats = CATS.map(([key,label])=>({ key, label, select:()=>this.setState({ category:key, menuScrolled:false }),
+              color: s.category===key ? '#141414' : '#a8a297',
+              border: s.category===key ? '#141414' : 'transparent' }));
+            const showFeature = s.category==='specials';
+            const featList = MENU.specials.filter(it=>it.id!=='freckle' && it.id!=='macca');
+            const features = featList.map((it,i)=>({
+              key:it.id, idx:i, name:it.name, meta:it.meta, priceStr:priceStr(it.price),
+              tag: i===0 ? 'FEATURED THIS MONTH' : 'MONTHLY SPECIAL',
+              img: it.img,
+              open:()=>this.openItem(it), add:(e)=>{ if(e&&e.stopPropagation) e.stopPropagation(); this.quickAdd(it); },
+            }));
+            const listItems = MENU[s.category];
+            const featureDots = featList.map((it,i)=>({ w: i===s.featureIdx ? 18 : 6, bg: i===s.featureIdx ? '#141414' : '#cfcdc5' }));
+            const items = listItems.map((it,i)=>({
+              key:it.id, item:it, name:it.name, meta:it.meta, priceStr:priceStr(it.price), inDelay: (Math.min(i,9)*45)+'ms',
+              open:()=>this.openItem(it), add:()=>this.quickAdd(it),
+            }));
+            const reorderItems = LAST_ORDER.map(row=>{ const it=this._findItem(row.id); return { key:row.id, name: it?it.name:'', meta: it?it.meta:'', thumb:this.thumbEl(it), add:()=>this.reorderAdd(row) }; });
+            const showReorder = isMember && reorderItems.length>0;
+            const menuHeadPadTop = ms ? 30 : 42;
+            const menuTitleSize = ms ? 17 : 21;
+            const menuAddrMax = ms ? 0 : 20;
+            const menuAddrOp = ms ? 0 : 1;
+            const menuTabsMt = ms ? 12 : 20;
+            const menuHeadShadow = ms ? '0 12px 26px -22px rgba(20,20,25,0.6)' : 'none';
+            const pickupPad = ms ? '6px 11px' : '8px 12px';
+            const avatarSize = ms ? 26 : 38;
+            const avatarFont = ms ? 11 : 15;
+            return (
+            <div style={{height:792, display:'flex', flexDirection:'column', animation:'lune-enter .32s ease both'}}>
+              <div style={{padding: menuHeadPadTop+'px 24px 0', background:'#f4f4f2', color:'#141414', position:'relative', zIndex:5, boxShadow:menuHeadShadow, transition:'padding .28s ease, box-shadow .28s ease'}}>
+                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', paddingTop:6, gap:12}}>
+                  <div style={{display:'flex', alignItems:'center', gap:10, minWidth:0}}>
+                    <img src={IMG('lune-rocket.png')} alt="Lune" style={{width:26, height:26, flexShrink:0, objectFit:'contain', display:'block'}}/>
+                    <div style={{minWidth:0}}>
+                      <div className="clickable menu-title" onClick={()=>this.go('store')} style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:menuTitleSize, letterSpacing:'-0.02em', cursor:'pointer', display:'inline-flex', alignItems:'center', gap:6, transition:'font-size .28s ease'}}>{store.name} <span style={{fontSize:13, color:'#a8a297'}}>▾</span></div>
+                      <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#8a8375', maxHeight:menuAddrMax, opacity:menuAddrOp, marginTop: ms?0:4, overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis', transition:'max-height .28s ease, opacity .2s ease'}}>{store.addr}</div>
+                    </div>
+                  </div>
+                  <div style={{display:'flex', alignItems:'center', gap:9, flexShrink:0}}>
+                    <div className="clickable pickup-card" onClick={()=>this.go('schedule')} style={{cursor:'pointer', border:'1px solid '+(ms?'transparent':'#e0dfda'), borderRadius:12, padding:pickupPad, textAlign:'right', background: ms?'transparent':'#fff', transition:'background .28s ease, border-color .28s ease, padding .28s ease'}}>
+                      {!ms && <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:8.5, letterSpacing:'0.12em', color:'#a8a297'}}>PICKUP</div>}
+                      <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:11.5, color:'#141414', marginTop: ms?0:3}}>{pickupShort}{!ms && ' ▾'}</div>
+                    </div>
+                    {isMember &&
+                      <span className="clickable avatar-btn" onClick={()=>this.go('profile')} style={{width:avatarSize, height:avatarSize, borderRadius:'50%', flexShrink:0, background:'linear-gradient(145deg,#3a2a1c,#17120d)', border:'1px solid rgba(20,20,25,0.15)', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:avatarFont, color:'#f2ede6', cursor:'pointer', transition:'width .28s ease, height .28s ease, font-size .28s ease'}}>{initial}</span>
+                    }
+                  </div>
+                </div>
+                <div ref={el=>this._tabRowRef=el} className="lune-scroll" style={{display:'flex', gap:20, marginTop:menuTabsMt, fontFamily:"'JetBrains Mono',monospace", fontSize:11, letterSpacing:'0.06em', borderBottom:'1px solid '+(ms?'#cfcdc5':'#e0dfda'), overflowX:'auto', position:'relative', transition:'margin-top .28s ease, border-color .28s ease'}}>
+                  {cats.map(cat=>(
+                    <span key={cat.key} ref={el=>{ this._tabRefs = this._tabRefs||{}; this._tabRefs[cat.key]=el; }} className="clickable cat-tab" onClick={cat.select} style={{cursor:'pointer', paddingBottom:12, whiteSpace:'nowrap', flexShrink:0, color:cat.color, borderBottom:'2px solid transparent', transition:'color .22s ease'}}>{cat.label}</span>
+                  ))}
+                  {s.tabIndicator && <span className="tab-underline" style={{left:s.tabIndicator.left, width:s.tabIndicator.width}}></span>}
+                </div>
+              </div>
+              <div className="lune-scroll" onScroll={(e)=>this.onMenuScroll(e)} style={{flex:1, overflowY:'auto', padding:'4px 24px 120px'}}>
+                {showReorder &&
+                  <React.Fragment>
+                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'baseline', marginTop:14}}>
+                      <span style={{fontFamily:"'JetBrains Mono',monospace", fontSize:11, letterSpacing:'0.14em', color:'#a8a297'}}>ORDER AGAIN</span>
+                      <span className="clickable link-accent" onClick={()=>this.toggleReorder()} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, color:ACC, cursor:'pointer'}}>{s.reorderShown ? 'HIDE' : 'SHOW'}</span>
+                    </div>
+                    {s.reorderShown &&
+                      <div className="lune-scroll" style={{display:'flex', gap:12, overflowX:'auto', margin:'12px -24px 4px', padding:'0 24px'}}>
+                        {reorderItems.map(ro=>(
+                          <div key={ro.key} style={{flex:'0 0 160px', border:'1px solid #e0dfda', borderRadius:14, padding:'13px 14px', background:'#fff', display:'flex', flexDirection:'column', gap:10}}>
+                            <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start'}}>
+                              <div style={{width:40, height:40, borderRadius:10, overflow:'hidden', background:'#efece6', display:'flex', alignItems:'center', justifyContent:'center'}}>{ro.thumb}</div>
+                              <div className="clickable plus-btn-sm" onClick={ro.add} style={{width:28, height:28, background:'#141414', color:'#f4f4f2', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, borderRadius:8, cursor:'pointer'}}>+</div>
+                            </div>
+                            <div>
+                              <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:14, lineHeight:1.15}}>{ro.name}</div>
+                              <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, color:'#8a8375', marginTop:4}}>{ro.meta}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    }
+                  </React.Fragment>
+                }
+                {showFeature &&
+                  <React.Fragment>
+                    <div className="lune-scroll" onScroll={(e)=>this.onFeatureScroll(e)} style={{display:'flex', gap:14, overflowX:'auto', scrollSnapType:'x mandatory', margin:'12px -24px 12px', padding:'0 24px'}}>
+                      {features.map(feature=>{
+                        const dist = Math.abs(feature.idx - s.featureIdx);
+                        const fScale = Math.max(0.9, 1 - dist*0.06);
+                        const fOpacity = Math.max(0.55, 1 - dist*0.35);
+                        return (
+                        <div key={feature.key} className="clickable feature-card" onClick={feature.open} style={{position:'relative', flex:'0 0 84%', scrollSnapAlign:'center', height:340, borderRadius:18, overflow:'hidden', cursor:'pointer', boxShadow:'0 22px 44px -26px rgba(20,20,25,0.55)', transform:'scale('+fScale+')', opacity:fOpacity, transition:'transform .35s cubic-bezier(.34,1.56,.64,1), opacity .35s ease'}}>
+                          <div style={{position:'absolute', inset:0}}>
+                            {feature.img
+                              ? <img src={feature.img} alt={feature.name} className="lune-photo" style={{width:'100%', height:'100%', objectFit:'cover', display:'block'}}/>
+                              : <div style={{width:'100%', height:'100%', background:'#3a2a1c'}}></div>}
+                          </div>
+                          <div style={{position:'absolute', inset:0, background:'linear-gradient(rgba(0,0,0,0) 38%, rgba(15,11,7,0.82))'}}></div>
+                          <div style={{position:'absolute', top:16, left:16, fontFamily:"'JetBrains Mono',monospace", fontSize:9, letterSpacing:'0.14em', color:'#1a140e', background:'#f2ede6', padding:'5px 10px', borderRadius:6}}>{feature.tag}</div>
+                          <div className="clickable feature-add-btn" onClick={feature.add} style={{position:'absolute', top:14, right:14, width:34, height:34, borderRadius:'50%', background:'rgba(255,255,255,0.14)', backdropFilter:'blur(12px)', border:'1px solid rgba(255,255,255,0.28)', color:'#f2ede6', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18}}>+</div>
+                          <div style={{position:'absolute', left:20, right:20, bottom:18, color:'#f2ede6'}}>
+                            <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, letterSpacing:'0.1em', color:'#d3ba98'}}>{feature.meta}</div>
+                            <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginTop:6}}>
+                              <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:24, letterSpacing:'-0.02em', maxWidth:210, lineHeight:1.1}}>{feature.name}</div>
+                              <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:14}}>{feature.priceStr}</div>
+                            </div>
+                          </div>
+                        </div>
+                        );
+                      })}
+                    </div>
+                    <div style={{display:'flex', justifyContent:'center', gap:7, margin:'2px 0 18px'}}>
+                      {featureDots.map((dot,i)=>(
+                        <span key={i} style={{width:dot.w, height:6, borderRadius:6, background:dot.bg, transition:'all .25s ease'}}></span>
+                      ))}
+                    </div>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10.5, letterSpacing:'0.14em', color:'#a8a297', margin:'2px 0 2px'}}>ALL {CAT_LABEL[s.category] || ''}</div>
+                  </React.Fragment>
+                }
+                {items.map(row=>(
+                  <div key={row.key} style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'14px 0', borderBottom:'1px solid #e0dfda', animation:'lune-fade-up .5s cubic-bezier(.16,.7,.2,1) both', animationDelay:row.inDelay}}>
+                    <div className="clickable item-row-main" onClick={row.open} style={{display:'flex', gap:14, alignItems:'center', cursor:'pointer', flex:1}}>
+                      <div style={{width:54, height:54, flexShrink:0, borderRadius:12, overflow:'hidden', background:'#efece6', display:'flex', alignItems:'center', justifyContent:'center'}}>{this.thumbEl(row.item)}</div>
+                      <div>
+                        <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:16}}>{row.name}</div>
+                        <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#8a8375', marginTop:4, letterSpacing:'0.06em'}}>{row.meta}</div>
+                      </div>
+                    </div>
+                    <div style={{textAlign:'right', marginLeft:12}}>
+                      <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:13}}>{row.priceStr}</div>
+                      <div className="clickable plus-btn-sm" onClick={row.add} style={{width:30, height:30, marginTop:6, marginLeft:'auto', background:'#141414', color:'#f4f4f2', display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, borderRadius:8, cursor:'pointer'}}>+</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {s.cart.length>0 &&
+                <div style={{position:'absolute', left:0, right:0, bottom:0, padding:'14px 24px 26px', background:'linear-gradient(transparent,#f4f4f2 34%)'}}>
+                  <div key={this.cartCountNum()} className="clickable magnetic-btn btn-dark" onClick={()=>this.go('bag')} onMouseMove={(e)=>this.magnetic(e)} onMouseLeave={(e)=>this.magneticReset(e)} style={{display:'flex', justifyContent:'space-between', alignItems:'center', background:'#141414', color:'#f4f4f2', borderRadius:14, padding:'16px 20px', fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer', animation:'lune-pop .3s cubic-bezier(.34,1.56,.64,1) both'}}>
+                    <span>BAG · {this.cartCountNum()} ITEMS</span><span>{money(sub)} →</span>
+                  </div>
+                </div>
+              }
+            </div>
+            );
+          })()}
+
+          {s.screen==='schedule' &&
+            <div style={{height:792, display:'flex', flexDirection:'column', animation:'lune-enter .32s ease both'}}>
+              <div style={{padding:'44px 24px 14px'}}>
+                <div className="clickable link-accent" onClick={()=>this.go('menu')} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'#8a8375', cursor:'pointer'}}>‹ MENU</div>
+                <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:26, letterSpacing:'-0.02em', marginTop:12}}>Pickup time</div>
+                <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#8a8375', marginTop:6, letterSpacing:'0.04em'}}>THE MENU UPDATES FOR THE DAY YOU CHOOSE</div>
+              </div>
+              <div className="lune-scroll" style={{flex:1, overflowY:'auto', padding:'6px 24px 20px'}}>
+                <div style={{border:'1px solid #e0dfda', borderRadius:12, padding:'15px 16px', display:'flex', justifyContent:'space-between', alignItems:'center', background:'#fff', marginBottom:20}}>
+                  <div>
+                    <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:15}}>{store.name}</div>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#8a8375', marginTop:3}}>{store.addr}</div>
+                  </div>
+                  <span className="clickable link-accent" onClick={()=>this.go('store')} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10.5, color:ACC, cursor:'pointer'}}>CHANGE</span>
+                </div>
+                <div className="clickable pickup-option" onClick={()=>this.setState({ pickupMode:'asap' })} style={{border:'1px solid '+(s.pickupMode==='asap'?ACC:'#e0dfda'), background: s.pickupMode==='asap'?ACC:'#fff', color: s.pickupMode==='asap'?'#f4f4f2':'#141414', borderRadius:12, padding:'16px 18px', display:'flex', justifyContent:'space-between', alignItems:'center', cursor:'pointer'}}>
+                  <div>
+                    <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:15}}>As soon as possible</div>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10.5, opacity:0.75, marginTop:4}}>TODAY · READY IN ~15 MIN</div>
+                  </div>
+                  <span style={{fontSize:15}}>{s.pickupMode==='asap' ? '●' : '○'}</span>
+                </div>
+                <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10.5, color:'#a8a297', letterSpacing:'0.1em', margin:'24px 0 12px'}}>OR SCHEDULE A DAY</div>
+                <div className="lune-scroll" style={{display:'flex', gap:9, overflowX:'auto', paddingBottom:2}}>
+                  {DAYS.map(d=>{ const on = s.pickupMode==='scheduled' && s.day===d; const c=this.chip(on); return (
+                    <span key={d} className="clickable chip-option" onClick={()=>this.setState({ pickupMode:'scheduled', day:d })} style={{cursor:'pointer', fontFamily:"'JetBrains Mono',monospace", fontSize:12, padding:'11px 15px', borderRadius:10, whiteSpace:'nowrap', flexShrink:0, textAlign:'center', border:'1px solid '+c.borderColor, background:c.background, color:c.color}}>{d}</span>
+                  );})}
+                </div>
+                <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10.5, color:'#a8a297', letterSpacing:'0.1em', margin:'24px 0 12px'}}>TIME</div>
+                <div style={{display:'flex', flexWrap:'wrap', gap:9}}>
+                  {TIMES.map(t=>{ const on = s.pickupMode==='scheduled' && s.time===t; const c=this.chip(on); return (
+                    <span key={t} className="clickable chip-option" onClick={()=>this.setState({ pickupMode:'scheduled', time:t })} style={{cursor:'pointer', fontFamily:"'JetBrains Mono',monospace", fontSize:13, padding:'12px 16px', borderRadius:10, border:'1px solid '+c.borderColor, background:c.background, color:c.color}}>{t} am</span>
+                  );})}
+                </div>
+              </div>
+              <div style={{padding:'14px 24px 26px'}}>
+                <div className="clickable btn-dark" onClick={()=>this.go('menu')} style={{textAlign:'center', background:'#141414', color:'#f4f4f2', borderRadius:14, padding:17, fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer'}}>VIEW MENU · {pickupShort} →</div>
+              </div>
+            </div>
+          }
+
+          {s.screen==='item' && s.active && (()=>{
+            const a = s.active;
+            const activeUnit = this.unitPrice(a, s.size, s.milk);
+            const mkOpts = (arr, cur, field) => arr.map(v=>{ const c=this.glassChip(cur===v); return { label:v, ...c, select:()=>this.setState({ [field]:v }) }; });
+            let activeCat = '';
+            for(const k in MENU){ if(MENU[k].some(x=>x.id===a.id)){ activeCat=k; break; } }
+            const kickerMap = { specials:'MONTHLY SPECIAL', classics:'LUNE CLASSIC', boxes:'LUNE BOX', coffee:'COFFEE', drinks:'DRINKS', retail:'LUNE RETAIL' };
+            const activeKicker = kickerMap[activeCat] || '';
+            const activeNotes = a.meta.split(' · ');
+            const activeIsFav = !!s.fav[a.id];
+            const activeIsDrink = !!(a.drink && a.milk);
+            const activeMilks = mkOpts(['Full cream','Soy','Oat','Almond'], s.milk, 'milk');
+            return (
+            <div style={{height:792, position:'relative', overflow:'hidden', color:'#f2ede6', background:'radial-gradient(130% 90% at 52% 26%, #443122 0%, #2a1e14 46%, #16100a 100%)', animation:'lune-enter .34s ease both'}}>
+              <div style={{position:'absolute', inset:0, background:'radial-gradient(58% 42% at 64% 44%, rgba(206,158,101,0.30), transparent 72%)'}}></div>
+              <div style={{position:'absolute', left:0, right:0, top:'63%', bottom:0, background:'linear-gradient(rgba(0,0,0,0), rgba(0,0,0,0.34))'}}></div>
+              <Starfield/>
+
+              <div style={{position:'absolute', top:44, left:20, right:20, zIndex:12, display:'flex', justifyContent:'space-between'}}>
+                <span className="clickable icon-btn-glass" onClick={()=>this.go('menu')} style={{width:40, height:40, borderRadius:'50%', background:'rgba(255,255,255,0.10)', backdropFilter:'blur(14px)', border:'1px solid rgba(255,255,255,0.16)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, cursor:'pointer'}}>‹</span>
+                <span className="clickable icon-btn-glass" onClick={()=>this.toggleFav()} style={{width:40, height:40, borderRadius:'50%', background:'rgba(255,255,255,0.10)', backdropFilter:'blur(14px)', border:'1px solid rgba(255,255,255,0.16)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, cursor:'pointer', color: activeIsFav ? '#e07a5f' : '#f2ede6'}}>{activeIsFav ? '♥' : '♡'}</span>
+              </div>
+
+              <div style={{position:'absolute', top:98, left:0, right:0, zIndex:6, textAlign:'center', padding:'0 30px'}}>
+                <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10.5, letterSpacing:'0.18em', color:'#d3ba98'}}>{activeKicker}</div>
+                <h2 style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:30, lineHeight:1.08, letterSpacing:'-0.02em', margin:'9px 0 0'}}>{a.name}</h2>
+                <div style={{display:'flex', gap:7, justifyContent:'center', flexWrap:'wrap', marginTop:14}}>
+                  {activeNotes.map((note,i)=>(
+                    <span key={i} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, letterSpacing:'0.06em', padding:'6px 12px', borderRadius:20, border:'1px solid rgba(255,255,255,0.20)', color:'#e0d2bf'}}>{note}</span>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{position:'absolute', top:0, bottom:0, left:0, right:0, zIndex:4, display:'flex', alignItems:'center', justifyContent:'center'}}>
+                <div style={{position:'relative', width:224}}>
+                  <div style={{position:'absolute', left:'50%', bottom:-26, transform:'translateX(-50%)', width:150, height:26, background:'radial-gradient(ellipse at center, rgba(0,0,0,0.5), transparent 72%)', filter:'blur(3px)'}}></div>
+                  {a.img
+                    ? this.imgEl(a, { width:224, height:224, borderRadius:18, boxShadow:'0 30px 60px -24px rgba(0,0,0,0.7)' })
+                    : <div style={{width:224, height:224, borderRadius:18, boxShadow:'0 30px 60px -24px rgba(0,0,0,0.7)', background:'#3a2a1c', display:'flex', alignItems:'center', justifyContent:'center'}}><img src={IMG('lune-rocket-white.png')} alt="" style={{width:'50%', height:'50%', objectFit:'contain'}}/></div>}
+                </div>
+              </div>
+
+              <div className="lune-scroll" style={{position:'absolute', left:0, right:0, bottom:0, zIndex:9, maxHeight:'60%', overflowY:'auto', padding:'26px 20px 24px', background:'linear-gradient(rgba(15,11,7,0), rgba(15,11,7,0.82) 26%, rgba(15,11,7,0.95))'}}>
+                {activeIsDrink &&
+                  <div style={{marginBottom:16}}>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, letterSpacing:'0.14em', color:'#9a8f80', marginBottom:9}}>MILK</div>
+                    <div className="lune-scroll" style={{display:'flex', gap:7, overflowX:'auto'}}>
+                      {activeMilks.map(opt=>(
+                        <span key={opt.label} className="clickable glass-chip" onClick={opt.select} style={{cursor:'pointer', flexShrink:0, fontFamily:"'JetBrains Mono',monospace", fontSize:11, padding:'8px 14px', borderRadius:22, border:'1px solid '+opt.borderColor, background:opt.background, color:opt.color, backdropFilter:'blur(10px)'}}>{opt.label}</span>
+                      ))}
+                    </div>
+                  </div>
+                }
+
+                <p style={{fontSize:12.5, lineHeight:1.6, color:'#c9bcab', margin:'0 0 12px'}}>{a.desc}</p>
+                <div style={{display:'flex', justifyContent:'space-between', fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, color:'#9a8f80', letterSpacing:'0.06em', paddingBottom:16}}>
+                  <span>ALLERGENS</span><span style={{color:'#d3c6b5', textAlign:'right', maxWidth:210}}>{a.allergens}</span>
+                </div>
+
+                <div style={{display:'flex', gap:10, alignItems:'stretch'}}>
+                  <div style={{display:'flex', alignItems:'center', gap:14, padding:'0 16px', borderRadius:16, background:'rgba(255,255,255,0.09)', border:'1px solid rgba(255,255,255,0.16)', backdropFilter:'blur(12px)', fontFamily:"'JetBrains Mono',monospace", fontSize:15}}>
+                    <span className="clickable qty-btn" onClick={()=>this.setState({ qty:Math.max(1,s.qty-1) })} style={{cursor:'pointer'}}>−</span>
+                    <span style={{minWidth:14, textAlign:'center'}}>{s.qty}</span>
+                    <span className="clickable qty-btn" onClick={()=>this.setState({ qty:s.qty+1 })} style={{cursor:'pointer'}}>+</span>
+                  </div>
+                  <div className="clickable magnetic-btn btn-add-bag" onClick={()=>this.addActive()} onMouseMove={(e)=>this.magnetic(e)} onMouseLeave={(e)=>this.magneticReset(e)} style={{flex:1, display:'flex', justifyContent:'space-between', alignItems:'center', background:'#f2ede6', color:'#1a140e', borderRadius:16, padding:'16px 20px', fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer'}}>
+                    <span>ADD TO BAG</span><span>{money(activeUnit*s.qty)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            );
+          })()}
+
+          {s.screen==='bag' &&
+            <div style={{height:792, display:'flex', flexDirection:'column', animation:'lune-enter .32s ease both'}}>
+              <div style={{padding:'44px 24px 14px'}}>
+                <div className="clickable link-accent" onClick={()=>this.go('menu')} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'#8a8375', cursor:'pointer'}}>‹ MENU</div>
+                <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:26, letterSpacing:'-0.02em', marginTop:12}}>Your bag</div>
+              </div>
+              <div className="lune-scroll" style={{flex:1, overflowY:'auto', padding:'0 24px 20px'}}>
+                {cart.map(line=>(
+                  <div key={line.key} style={{display:'flex', gap:14, alignItems:'flex-start', padding:'16px 0', borderTop:'1px solid #e0dfda'}}>
+                    <div style={{width:54, height:54, flexShrink:0, borderRadius:12, overflow:'hidden', background:'#efece6', display:'flex', alignItems:'center', justifyContent:'center'}}>{line.thumb}</div>
+                    <div style={{flex:1}}>
+                      <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:15}}>{line.name}</div>
+                      <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#8a8375', marginTop:3}}>{line.variant}</div>
+                      <div style={{display:'flex', alignItems:'center', gap:16, marginTop:10, fontFamily:"'JetBrains Mono',monospace", fontSize:13}}>
+                        <span className="clickable qty-box" onClick={()=>this.changeLine(line.key,-1)} style={{cursor:'pointer', width:26, height:26, border:'1px solid #d7d6d0', borderRadius:7, display:'flex', alignItems:'center', justifyContent:'center'}}>−</span>
+                        <span>{line.qty}</span>
+                        <span className="clickable qty-box" onClick={()=>this.changeLine(line.key,1)} style={{cursor:'pointer', width:26, height:26, border:'1px solid #d7d6d0', borderRadius:7, display:'flex', alignItems:'center', justifyContent:'center'}}>+</span>
+                      </div>
+                    </div>
+                    <div style={{textAlign:'right'}}>
+                      <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:13}}>{line.total}</div>
+                      <div className="clickable link-accent" onClick={()=>this.removeLine(line.key)} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#a8a297', marginTop:8, cursor:'pointer'}}>REMOVE</div>
+                    </div>
+                  </div>
+                ))}
+
+                {s.cart.length>0 && !hasDrink &&
+                  <div style={{marginTop:20, border:'1px dashed #cfcec7', borderRadius:14, padding:'14px 16px', display:'flex', alignItems:'center', gap:14, background:'#fbfbf9'}}>
+                    <div style={{width:44, height:44, borderRadius:10, flexShrink:0, background:'repeating-linear-gradient(135deg,#e9e9e5,#e9e9e5 6px,#dededa 6px,#dededa 12px)'}}></div>
+                    <div style={{flex:1}}>
+                      <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, color:'#a8a297', letterSpacing:'0.1em'}}>GOES WELL WITH</div>
+                      <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:14, marginTop:2}}>A coffee by ONA</div>
+                    </div>
+                    <div className="clickable link-accent" onClick={()=>this.openItem(MENU.coffee.find(x=>x.id==='latte'))} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:ACC, cursor:'pointer'}}>ADD +</div>
+                  </div>
+                }
+
+                <div style={{marginTop:22, display:'flex', flexDirection:'column', gap:9, fontFamily:"'JetBrains Mono',monospace", fontSize:12.5, color:'#6b6459'}}>
+                  <div style={{display:'flex', justifyContent:'space-between', borderTop:'1px solid #141414', paddingTop:14}}><span>SUBTOTAL</span><span style={{color:'#141414'}}>{money(sub)}</span></div>
+                  <div style={{display:'flex', justifyContent:'space-between'}}><span>PICKUP</span><span style={{color:'#141414'}}>{pickupShort}</span></div>
+                </div>
+              </div>
+              <div style={{padding:'14px 24px 26px'}}>
+                <div className="clickable btn-dark" onClick={()=>this.go('pickup')} style={{display:'flex', justifyContent:'space-between', alignItems:'center', background:'#141414', color:'#f4f4f2', borderRadius:14, padding:'17px 22px', fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer'}}>
+                  <span>CHECKOUT</span><span>{money(sub)} →</span>
+                </div>
+              </div>
+            </div>
+          }
+
+          {s.screen==='pickup' && (()=>{
+            const tipDefs = [
+              { key:'0', label:'No tip', val:0 },
+              { key:'1', label:'+$1', val:1 },
+              { key:'2', label:'+$2', val:2 },
+              { key:'up', label:'Round up', val: Math.max(0, Math.round((Math.ceil(sub)-sub)*100)/100) },
+            ];
+            const rewardsToggleBg = s.applyRewards ? ACC : '#d7d6d0';
+            const rewardsKnobX = s.applyRewards ? 21 : 3;
+            const payTotal = this.payTotalNum();
+            return (
+            <div style={{height:792, display:'flex', flexDirection:'column', animation:'lune-enter .32s ease both'}}>
+              <div style={{padding:'44px 24px 14px'}}>
+                <div className="clickable link-accent" onClick={()=>this.go('bag')} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'#8a8375', cursor:'pointer'}}>‹ BAG</div>
+                <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:26, letterSpacing:'-0.02em', marginTop:12}}>Checkout</div>
+              </div>
+              <div className="lune-scroll" style={{flex:1, overflowY:'auto', padding:'6px 24px 20px'}}>
+                <div style={{border:'1px solid #e0dfda', borderRadius:12, padding:'15px 16px', display:'flex', justifyContent:'space-between', alignItems:'center', background:'#fff'}}>
+                  <div>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:9, letterSpacing:'0.12em', color:'#a8a297', marginBottom:5}}>PICKUP</div>
+                    <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:15}}>{store.name}</div>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#8a8375', marginTop:3}}>{pickupFull}</div>
+                  </div>
+                  <span className="clickable link-accent" onClick={()=>this.go('schedule')} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10.5, color:ACC, cursor:'pointer'}}>CHANGE</span>
+                </div>
+                <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10.5, color:'#a8a297', letterSpacing:'0.1em', margin:'24px 0 12px'}}>ADD A TIP</div>
+                <div style={{display:'flex', gap:9}}>
+                  {tipDefs.map(t=>{ const c=this.chip(s.tipKey===t.key); return (
+                    <span key={t.key} className="clickable chip-option" onClick={()=>this.setState({ tipKey:t.key, tip:t.val })} style={{cursor:'pointer', fontFamily:"'JetBrains Mono',monospace", fontSize:12, padding:'11px 14px', borderRadius:10, border:'1px solid '+c.borderColor, background:c.background, color:c.color}}>{t.label}</span>
+                  );})}
+                </div>
+                <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10.5, color:'#a8a297', letterSpacing:'0.1em', margin:'26px 0 12px'}}>NAME FOR PICKUP</div>
+                <input value={s.name} onChange={(e)=>this.setState({ name:e.target.value })} placeholder="Your name" style={{width:'100%', border:'1px solid #e0dfda', borderRadius:10, padding:14, fontFamily:"'JetBrains Mono',monospace", fontSize:14, color:'#141414', background:'#fff', outline:'none'}}/>
+                {isMember &&
+                  <div className="clickable rewards-row" onClick={()=>this.toggleRewards()} style={{marginTop:22, display:'flex', alignItems:'center', justifyContent:'space-between', border:'1px solid '+(s.applyRewards?'#141414':'#e0dfda'), borderRadius:12, padding:'14px 16px', background: s.applyRewards?'#f7f4ee':'#fff', cursor:'pointer'}}>
+                    <div style={{display:'flex', alignItems:'center', gap:11}}>
+                      <img src={IMG('lune-rocket.png')} alt="" style={{width:22, height:22, objectFit:'contain', display:'block'}}/>
+                      <div>
+                        <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:13.5, color:'#141414'}}>Apply Lune Rewards</div>
+                        <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#8a8375', marginTop:2}}>{rewardsStr} available</div>
+                      </div>
+                    </div>
+                    <span style={{width:44, height:26, borderRadius:20, background:rewardsToggleBg, position:'relative', transition:'background .2s ease', flexShrink:0}}><span style={{position:'absolute', top:3, left:rewardsKnobX, width:20, height:20, borderRadius:'50%', background:'#fff', transition:'left .2s ease', boxShadow:'0 1px 3px rgba(0,0,0,0.3)'}}></span></span>
+                  </div>
+                }
+                <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10.5, color:'#a8a297', letterSpacing:'0.1em', margin:'26px 0 12px'}}>YOUR ORDER</div>
+                <div style={{display:'flex', flexDirection:'column'}}>
+                  {cart.map(line=>(
+                    <div key={line.key} style={{display:'flex', gap:12, alignItems:'center', padding:'10px 0', borderTop:'1px solid #e0dfda'}}>
+                      <div style={{width:40, height:40, flexShrink:0, borderRadius:9, overflow:'hidden', background:'#efece6', display:'flex', alignItems:'center', justifyContent:'center'}}>{line.thumb}</div>
+                      <div style={{flex:1, minWidth:0}}>
+                        <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:13.5}}>{line.qty}× {line.name}</div>
+                        <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, color:'#8a8375', marginTop:2}}>{line.variant}</div>
+                      </div>
+                      <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:12.5, color:'#141414'}}>{line.total}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{marginTop:22, display:'flex', flexDirection:'column', gap:9, fontFamily:"'JetBrains Mono',monospace", fontSize:12.5, color:'#6b6459'}}>
+                  <div style={{display:'flex', justifyContent:'space-between', borderTop:'1px solid #e0dfda', paddingTop:14}}><span>SUBTOTAL</span><span style={{color:'#141414'}}>{money(sub)}</span></div>
+                  <div style={{display:'flex', justifyContent:'space-between'}}><span>TIP</span><span style={{color:'#141414'}}>{money(s.tip||0)}</span></div>
+                  {appliedRewards>0 &&
+                    <div style={{display:'flex', justifyContent:'space-between'}}><span>REWARDS</span><span style={{color:ACC}}>−{money(appliedRewards)}</span></div>
+                  }
+                  <div style={{display:'flex', justifyContent:'space-between', borderTop:'1px solid #141414', paddingTop:12, fontSize:14}}><span style={{color:'#141414'}}>TOTAL</span><span style={{color:'#141414'}}>{money(payTotal)}</span></div>
+                </div>
+              </div>
+              <div style={{padding:'14px 24px 26px'}}>
+                <div className="clickable magnetic-btn btn-dark" onClick={()=>this.placeOrder()} onMouseMove={(e)=>this.magnetic(e)} onMouseLeave={(e)=>this.magneticReset(e)} style={{display:'flex', justifyContent:'space-between', alignItems:'center', background: canPay?'#141414':'#c7c5be', color:'#f4f4f2', borderRadius:14, padding:'17px 22px', fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer'}}>
+                  <span>PLACE ORDER</span><span>{money(payTotal)} →</span>
+                </div>
+                <div style={{textAlign:'center', fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#a8a297', marginTop:12}}>{canPay ? 'PAY ON PICKUP · OR CARD AT CHECKOUT' : 'YOUR BAG IS EMPTY'}</div>
+              </div>
+            </div>
+            );
+          })()}
+
+          {s.screen==='launching' &&
+            <div style={{height:792, background:'#0b0805', color:'#f2f1ee', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', position:'relative', overflow:'hidden'}}>
+              <div style={{position:'absolute', inset:-40, backgroundImage:'radial-gradient(1.5px 1.5px at 22% 34%, rgba(255,255,255,0.55), transparent), radial-gradient(1.3px 1.3px at 74% 18%, rgba(255,255,255,0.44), transparent), radial-gradient(1.5px 1.5px at 48% 78%, rgba(255,255,255,0.44), transparent)', backgroundSize:'200px 200px', animation:'lune-star-mid 4.5s linear infinite'}}></div>
+              <div style={{position:'absolute', inset:0, background:'radial-gradient(58% 40% at 50% 58%, rgba(170,130,90,0.18), transparent 70%)'}}></div>
+              <div style={{position:'relative', animation:'lune-liftoff 2s cubic-bezier(.55,.06,.68,.19) both'}}>
+                <div style={{position:'relative', width:130, height:130}}>
+                  <div style={{position:'absolute', left:44, top:80, width:22, height:150, transformOrigin:'top center', background:'linear-gradient(rgba(255,236,208,0.95), rgba(224,201,168,0.4) 42%, rgba(224,201,168,0))', filter:'blur(7px)', borderRadius:'44%', animation:'lune-plume 2s ease-in both'}}></div>
+                  <img src={IMG('lune-rocket-white.png')} alt="" style={{position:'relative', width:130, height:130, objectFit:'contain', display:'block', filter:'drop-shadow(0 0 34px rgba(170,130,90,0.55))', animation:'lune-shudder .11s linear .32s 8'}}/>
+                </div>
+              </div>
+              <div style={{position:'absolute', bottom:126, left:0, right:0, textAlign:'center', animation:'lune-launch-text 2s ease both'}}>
+                <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:11, letterSpacing:'0.18em', color:'#c3b8ab'}}>PLACING YOUR ORDER</div>
+                <div style={{display:'flex', gap:7, justifyContent:'center', marginTop:14}}>
+                  <span style={{width:6, height:6, borderRadius:'50%', background:'#e0c9a8', animation:'lune-twinkle 1s ease-in-out infinite'}}></span>
+                  <span style={{width:6, height:6, borderRadius:'50%', background:'#e0c9a8', animation:'lune-twinkle 1s ease-in-out .2s infinite'}}></span>
+                  <span style={{width:6, height:6, borderRadius:'50%', background:'#e0c9a8', animation:'lune-twinkle 1s ease-in-out .4s infinite'}}></span>
+                </div>
+              </div>
+            </div>
+          }
+
+          {s.screen==='confirm' &&
+            <div style={{height:792, background:'#0b0805', color:'#f2f1ee', display:'flex', flexDirection:'column', padding:'70px 28px 30px', position:'relative', overflow:'hidden', animation:'lune-enter .32s ease both'}}>
+              <Starfield/>
+              <div style={{position:'relative', flex:1}}>
+                <img src={IMG('lune-rocket-white.png')} alt="" style={{width:60, height:60, objectFit:'contain', display:'block', marginBottom:28, filter:'drop-shadow(0 0 40px rgba(170,130,90,0.55))', animation:'lune-pop .5s ease both'}}/>
+                <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:11, letterSpacing:'0.16em', color:'#9a8f80'}}>ORDER CONFIRMED</div>
+                <h2 style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:32, letterSpacing:'-0.02em', margin:'12px 0 8px'}}>See you soon{s.name ? ', ' + s.name.split(' ')[0] : ''}</h2>
+                <p style={{fontSize:13.5, lineHeight:1.6, color:'#c3b8ab', margin:'0 0 34px', maxWidth:270}}>We're on it. Track your order below — we'll have it ready at the counter.</p>
+                <div style={{display:'flex', flexDirection:'column', gap:16, fontFamily:"'JetBrains Mono',monospace", fontSize:12.5}}>
+                  <div style={{display:'flex', justifyContent:'space-between', borderTop:'1px solid rgba(255,255,255,0.14)', paddingTop:14}}><span style={{color:'#9a8f80'}}>ORDER</span><span>{s.orderNo}</span></div>
+                  <div style={{display:'flex', justifyContent:'space-between', borderTop:'1px solid rgba(255,255,255,0.14)', paddingTop:14}}><span style={{color:'#9a8f80'}}>STORE</span><span>{store.name}</span></div>
+                  <div style={{display:'flex', justifyContent:'space-between', borderTop:'1px solid rgba(255,255,255,0.14)', paddingTop:14}}><span style={{color:'#9a8f80'}}>PICKUP</span><span>{pickupFull}</span></div>
+                  <div style={{display:'flex', justifyContent:'space-between', borderTop:'1px solid rgba(255,255,255,0.14)', paddingTop:14}}><span style={{color:'#9a8f80'}}>TOTAL</span><span>{money(this.payTotalNum())}</span></div>
+                </div>
+              </div>
+              <div style={{position:'relative', display:'flex', flexDirection:'column', gap:10}}>
+                <div className="clickable btn-accent" onClick={()=>this.startTracking()} style={{textAlign:'center', background:ACC, color:'#f4f4f2', borderRadius:14, padding:16, fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer'}}>TRACK ORDER →</div>
+                <div className="clickable btn-outline" onClick={()=>this.reset()} style={{textAlign:'center', border:'1px solid rgba(255,255,255,0.28)', color:'#f2f1ee', borderRadius:14, padding:16, fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer'}}>START NEW ORDER</div>
+              </div>
+            </div>
+          }
+
+          {s.screen==='track' && (()=>{
+            const stepDefs = [
+              { label:'Order confirmed', sub:'We’ve got your order' },
+              { label:'Preparing your order', sub:'We’re getting it ready' },
+              { label:'Ready for pickup', sub:'Collect at the counter' },
+            ];
+            const trackSteps = stepDefs.map((st,i)=>{
+              const done = i < s.trackStep, active = i === s.trackStep, last = i === stepDefs.length-1;
+              return {
+                key:i, label:st.label, sub:st.sub,
+                dotBg: (done||active) ? ACC : 'transparent',
+                dotBorder: (done||active) ? ACC : 'rgba(255,255,255,0.3)',
+                lineBg: last ? 'transparent' : (done ? ACC : 'rgba(255,255,255,0.16)'),
+                labelColor: (done||active) ? '#f2f1ee' : '#6b6156',
+                anim: active ? 'lune-pulse 1.5s ease-in-out infinite' : 'none',
+              };
+            });
+            const trackHeadline = s.trackStep>=2 ? 'Ready to collect' : (s.trackStep===1 ? 'Preparing your order' : 'Order confirmed');
+            const trackEta = s.trackStep>=2 ? 'At the counter now' : 'Ready in about 10 minutes';
+            return (
+            <div style={{height:792, background:'#0b0805', color:'#f2f1ee', display:'flex', flexDirection:'column', padding:'64px 28px 30px', position:'relative', overflow:'hidden', animation:'lune-enter .32s ease both'}}>
+              <Starfield/>
+              <div style={{position:'relative', flex:1}}>
+                <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:11, letterSpacing:'0.16em', color:'#9a8f80'}}>ORDER {s.orderNo}</div>
+                <h2 style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:30, letterSpacing:'-0.02em', margin:'12px 0 6px'}}>{trackHeadline}</h2>
+                <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'#c3b8ab', marginBottom:38}}>{trackEta}</div>
+                <div>
+                  {trackSteps.map(step=>(
+                    <div key={step.key} style={{display:'flex', gap:18}}>
+                      <div style={{display:'flex', flexDirection:'column', alignItems:'center'}}>
+                        <div style={{width:16, height:16, borderRadius:'50%', background:step.dotBg, border:'1px solid '+step.dotBorder, animation:step.anim}}></div>
+                        <div style={{width:2, height:38, background:step.lineBg}}></div>
+                      </div>
+                      <div style={{paddingBottom:16}}>
+                        <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:16, color:step.labelColor}}>{step.label}</div>
+                        <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10.5, color:'#9a8f80', marginTop:3}}>{step.sub}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div style={{position:'relative', display:'flex', flexDirection:'column', gap:10}}>
+                <div className="clickable btn-outline" onClick={()=>this.go('confirm')} style={{textAlign:'center', border:'1px solid rgba(255,255,255,0.28)', color:'#f2f1ee', borderRadius:14, padding:15, fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer'}}>ORDER DETAILS</div>
+                <div className="clickable link-muted" onClick={()=>this.reset()} style={{textAlign:'center', color:'#9a8f80', fontFamily:"'JetBrains Mono',monospace", fontSize:11, padding:6, cursor:'pointer'}}>START NEW ORDER</div>
+              </div>
+            </div>
+            );
+          })()}
+
+          {s.screen==='rewards' && (()=>{
+            const rewardTarget = 5;
+            const rewardPct = Math.min(100, Math.round(s.rewards/rewardTarget*100));
+            const rewardNextLabel = s.rewards>=rewardTarget ? 'Free coffee ready' : ('$'+(rewardTarget-s.rewards).toFixed(2)+' to go');
+            return (
+            <div className="lune-scroll" style={{height:792, overflowY:'auto', background:'#0b0805', color:'#f2ede6', position:'relative', animation:'lune-enter .32s ease both'}}>
+              <Starfield/>
+              <div style={{position:'relative', padding:'52px 26px 30px'}}>
+                <div className="clickable link-muted" onClick={()=>this.goBack()} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'#9a8f80', cursor:'pointer'}}>‹ BACK</div>
+                <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10.5, letterSpacing:'0.16em', color:'#9a8f80', marginTop:26}}>YOUR BALANCE</div>
+                <div style={{display:'flex', alignItems:'flex-end', gap:12, marginTop:8}}>
+                  <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:52, letterSpacing:'-0.03em', lineHeight:0.9}}>{rewardsStr}</div>
+                  <img src={IMG('lune-rocket-white.png')} alt="" style={{width:40, height:40, objectFit:'contain', display:'block', filter:'drop-shadow(0 0 26px rgba(170,130,90,0.55))', marginBottom:6}}/>
+                </div>
+                <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:'#c3b8ab', marginTop:10}}>Lune Rewards · redeem at checkout</div>
+
+                <div style={{marginTop:28, border:'1px solid rgba(255,255,255,0.14)', borderRadius:16, padding:18, background:'rgba(255,255,255,0.04)'}}>
+                  <div style={{display:'flex', justifyContent:'space-between', fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:'#c3b8ab'}}>
+                    <span>NEXT REWARD</span><span style={{color:'#e0c9a8'}}>{rewardNextLabel}</span>
+                  </div>
+                  <div style={{height:8, borderRadius:8, background:'rgba(255,255,255,0.12)', marginTop:14, overflow:'hidden'}}>
+                    <div style={{height:'100%', width:rewardPct+'%', borderRadius:8, background:'linear-gradient(90deg, #b98f5e, #e0c9a8)', transition:'width .5s ease'}}></div>
+                  </div>
+                  <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#9a8f80', marginTop:12}}>{money(s.rewards)} of $5.00 toward a free filter coffee</div>
+                </div>
+
+                <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10.5, letterSpacing:'0.14em', color:'#9a8f80', margin:'30px 0 14px'}}>HOW IT WORKS</div>
+                <div style={{display:'flex', flexDirection:'column', gap:16}}>
+                  <div style={{display:'flex', gap:14, alignItems:'flex-start'}}><span style={{fontFamily:"'JetBrains Mono',monospace", color:'#e0c9a8', fontSize:12}}>01</span><span style={{fontSize:13, lineHeight:1.5, color:'#d3c6b5'}}>Earn 5% back in rewards on every pre-order you collect.</span></div>
+                  <div style={{display:'flex', gap:14, alignItems:'flex-start'}}><span style={{fontFamily:"'JetBrains Mono',monospace", color:'#e0c9a8', fontSize:12}}>02</span><span style={{fontSize:13, lineHeight:1.5, color:'#d3c6b5'}}>Redeem your balance against any order, any time — no minimum.</span></div>
+                  <div style={{display:'flex', gap:14, alignItems:'flex-start'}}><span style={{fontFamily:"'JetBrains Mono',monospace", color:'#e0c9a8', fontSize:12}}>03</span><span style={{fontSize:13, lineHeight:1.5, color:'#d3c6b5'}}>Hit $5.00 and your next filter coffee is on us.</span></div>
+                </div>
+              </div>
+              <div style={{position:'relative', padding:'6px 26px 30px'}}>
+                <div className="clickable btn-accent" onClick={()=>this.go('store')} style={{textAlign:'center', background:ACC, color:'#f4f4f2', borderRadius:14, padding:16, fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer'}}>START AN ORDER →</div>
+              </div>
+            </div>
+            );
+          })()}
+
+          {s.screen==='profile' && (()=>{
+            const profileRows = [
+              { label:'MOBILE', value:'+61 '+(s.phone? (s.phone.slice(0,3)+' '+s.phone.slice(3,6)+' '+s.phone.slice(6,9)) : '412 345 678') },
+              { label:'EMAIL', value:(s.user? s.user.toLowerCase():'keith')+'@lune.co' },
+              { label:'SAVED STORE', value:store.name },
+              { label:'DIETARY', value:'None set' },
+            ];
+            return (
+            <div className="lune-scroll" style={{height:792, overflowY:'auto', background:'#0b0805', color:'#f2ede6', position:'relative', animation:'lune-enter .32s ease both'}}>
+              <Starfield/>
+              <div style={{position:'relative', padding:'52px 26px 34px'}}>
+                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                  <div className="clickable link-muted" onClick={()=>this.goBack()} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'#9a8f80', cursor:'pointer'}}>‹ BACK</div>
+                  <div className="clickable link-muted" onClick={()=>this.logout()} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:'#9a8f80', cursor:'pointer'}}>LOG OUT</div>
+                </div>
+                <div style={{display:'flex', alignItems:'center', gap:16, marginTop:26}}>
+                  <div style={{width:64, height:64, borderRadius:'50%', flexShrink:0, background:'linear-gradient(145deg,#4a3624,#17120d)', border:'1px solid rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:26, boxShadow:'0 0 30px -6px rgba(170,130,90,0.4)'}}>{initial}</div>
+                  <div>
+                    <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:24, letterSpacing:'-0.02em'}}>{s.user||'Guest'}</div>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#9a8f80', marginTop:5, letterSpacing:'0.06em'}}>LUNE MEMBER · JOINED 2024</div>
+                  </div>
+                </div>
+
+                <div className="clickable qr-row" onClick={()=>this.openQr()} style={{marginTop:26, display:'flex', alignItems:'center', gap:14, border:'1px solid rgba(255,255,255,0.16)', borderRadius:16, padding:'16px 18px', background:'rgba(255,255,255,0.04)', cursor:'pointer'}}>
+                  <span style={{width:44, height:44, borderRadius:12, flexShrink:0, background:'#f2ede6', color:'#141414', display:'flex', alignItems:'center', justifyContent:'center'}}><svg width="24" height="24" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3"><rect x="1.2" y="1.2" width="5" height="5" rx="1"></rect><rect x="9.8" y="1.2" width="5" height="5" rx="1"></rect><rect x="1.2" y="9.8" width="5" height="5" rx="1"></rect><path d="M9.8 9.8h2.2v2.2M14.8 9.8v5M9.8 14.8h5"></path></svg></span>
+                  <div style={{flex:1}}>
+                    <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:15}}>Membership QR</div>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#9a8f80', marginTop:3}}>Scan in-store to earn &amp; redeem</div>
+                  </div>
+                  <span style={{color:'#9a8f80', fontSize:16}}>›</span>
+                </div>
+
+                <div style={{display:'flex', gap:12, marginTop:14}}>
+                  <div style={{flex:1, border:'1px solid rgba(255,255,255,0.14)', borderRadius:16, padding:16, background:'rgba(255,255,255,0.04)'}}>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, letterSpacing:'0.12em', color:'#9a8f80'}}>WALLET</div>
+                    <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:26, letterSpacing:'-0.02em', marginTop:8}}>{walletStr}</div>
+                    <div className="clickable link-muted" style={{fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, color:'#e0c9a8', marginTop:8, cursor:'pointer'}}>TOP UP +</div>
+                  </div>
+                  <div className="clickable rewards-card" onClick={()=>this.go('rewards')} style={{flex:1, border:'1px solid rgba(255,255,255,0.14)', borderRadius:16, padding:16, background:'rgba(255,255,255,0.04)', cursor:'pointer'}}>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, letterSpacing:'0.12em', color:'#9a8f80'}}>REWARDS</div>
+                    <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:26, letterSpacing:'-0.02em', marginTop:8}}>{rewardsStr}</div>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, color:'#e0c9a8', marginTop:8}}>VIEW ›</div>
+                  </div>
+                </div>
+
+                <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10.5, letterSpacing:'0.14em', color:'#9a8f80', margin:'30px 0 6px'}}>ACCOUNT DETAILS</div>
+                <div style={{display:'flex', flexDirection:'column'}}>
+                  {profileRows.map(row=>(
+                    <div key={row.label} style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'15px 0', borderBottom:'1px solid rgba(255,255,255,0.1)', fontFamily:"'JetBrains Mono',monospace", fontSize:12}}>
+                      <span style={{color:'#9a8f80'}}>{row.label}</span><span style={{color:'#f2ede6', textAlign:'right', maxWidth:190}}>{row.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            );
+          })()}
+
+          {s.qrOpen &&
+            <div style={{position:'absolute', inset:0, zIndex:70, display:'flex', flexDirection:'column', justifyContent:'flex-end'}}>
+              <div className="clickable" onClick={()=>this.closeQr()} style={{position:'absolute', inset:0, background:'rgba(9,6,3,0.66)', backdropFilter:'blur(3px)', animation:'lune-fade .25s ease both'}}></div>
+              <div style={{position:'relative', background:'#1c1610', borderRadius:'28px 28px 0 0', padding:'14px 26px 30px', color:'#f2ede6', boxShadow:'0 -20px 50px -20px rgba(0,0,0,0.7)', animation:'lune-sheet .34s cubic-bezier(.2,.7,.2,1) both'}}>
+                <div style={{width:40, height:4, borderRadius:4, background:'rgba(255,255,255,0.22)', margin:'0 auto 22px'}}></div>
+                <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10.5, letterSpacing:'0.16em', color:'#9a8f80', textAlign:'center'}}>LUNE MEMBERSHIP</div>
+                <div style={{background:'#f2ede6', borderRadius:18, padding:20, margin:'18px auto 0', width:220}}>
+                  <img src={this.qrSrc()} alt="Membership QR" style={{width:'100%', display:'block', imageRendering:'pixelated'}}/>
+                </div>
+                <div style={{textAlign:'center', marginTop:18}}>
+                  <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:19, letterSpacing:'-0.02em'}}>{s.user||'Guest'}</div>
+                  <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:'#9a8f80', marginTop:6, letterSpacing:'0.14em'}}>MBR · 4471 0928</div>
+                </div>
+                <div style={{display:'flex', justifyContent:'center', gap:20, marginTop:20, fontFamily:"'JetBrains Mono',monospace", fontSize:11}}>
+                  <span style={{color:'#9a8f80'}}>WALLET <span style={{color:'#e0c9a8'}}>{walletStr}</span></span>
+                  <span style={{color:'#9a8f80'}}>REWARDS <span style={{color:'#e0c9a8'}}>{rewardsStr}</span></span>
+                </div>
+                <div className="clickable btn-outline" onClick={()=>this.closeQr()} style={{textAlign:'center', marginTop:22, border:'1px solid rgba(255,255,255,0.24)', borderRadius:14, padding:14, fontFamily:"'JetBrains Mono',monospace", fontSize:12, cursor:'pointer'}}>DONE</div>
+              </div>
+            </div>
+          }
+
+          {s.toast &&
+            <div style={{position:'absolute', left:24, right:24, bottom:104, zIndex:60, background:ACC, color:'#f4f4f2', borderRadius:12, padding:'13px 16px', fontFamily:"'JetBrains Mono',monospace", fontSize:12, display:'flex', justifyContent:'space-between', alignItems:'center', boxShadow:'0 12px 30px -10px rgba(70,50,30,0.6)', animation:'lune-toast 1.7s ease both'}}>
+              <span>{s.toast}</span><span style={{fontSize:14}}>✓</span>
+            </div>
+          }
+
+        </div>
+      </div>
+    );
+  }
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+<script>
+  (function(){
+    var src = document.getElementById('app-source').textContent;
+    var out = Babel.transform(src, { presets: [["react", { runtime: "classic" }]] }).code;
+    var s = document.createElement('script');
+    s.textContent = out;
+    document.body.appendChild(s);
+  })();
+</script>
+</body>
+</html>
+
