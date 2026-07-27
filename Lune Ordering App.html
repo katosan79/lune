@@ -12,8 +12,8 @@
 <script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin></script>
 <style>
   * { box-sizing: border-box; }
-  html, body { margin: 0; }
-  body { background: #e7e4dd; font-family: 'DM Sans', system-ui, sans-serif; -webkit-font-smoothing: antialiased; display:flex; justify-content:center; align-items:flex-start; min-height:100vh; padding:40px 20px 80px; }
+  html, body, #root { height: 100%; margin: 0; }
+  body { background: #e7e4dd; font-family: 'DM Sans', system-ui, sans-serif; -webkit-font-smoothing: antialiased; overflow: hidden; }
   a { color: oklch(0.47 0.075 55); } a:hover { color:#141414; }
   .lune-scroll::-webkit-scrollbar { display:none; }
   .lune-scroll { scrollbar-width:none; }
@@ -72,6 +72,11 @@
   .view-toggle-btn:hover{color:#141414 !important}
   .menu-grid-card .lune-photo, .menu-grid-card .grid-thumb-fallback{transition: transform .5s cubic-bezier(.34,1.56,.64,1);}
   .menu-grid-card:hover .lune-photo, .menu-grid-card:hover .grid-thumb-fallback{transform: scale(1.06);}
+  @media (hover:hover) and (pointer:fine) {
+    .menu-grid-card{transition:transform .28s cubic-bezier(.34,1.56,.64,1);}
+    .menu-grid-card:hover{transform:translateY(-4px);}
+    .feature-card:hover{box-shadow:0 28px 54px -26px rgba(20,20,25,0.65) !important;}
+  }
   .qr-row:hover{border-color:rgba(224,201,168,0.6) !important; background:rgba(255,255,255,0.08) !important}
   .rewards-card:hover{border-color:rgba(224,201,168,0.6) !important}
   .keypad-key:hover{background:rgba(255,255,255,0.14)}
@@ -239,10 +244,10 @@ class App extends React.Component {
     savedCard:null, useNewCard:false, saveCard:true,
     cardNumber:'', cardExpiry:'', cardCvc:'', cardName:'', cardErrors:{},
     lastName:'', firstName:'', dobDay:'', dobMonth:'', dobYear:'', signupReturnTo:'store', lastEarned:0, memberSince:null,
-    orderHistory:[], menuView:'grid',
+    orderHistory:[], menuView:'grid', winW: window.innerWidth,
   };
 
-  componentWillUnmount(){ clearTimeout(this._toast); clearTimeout(this._k1); clearTimeout(this._k2); clearTimeout(this._otpT); clearTimeout(this._splashT); clearTimeout(this._launchT); document.removeEventListener('keydown', this._onKeyActivate); }
+  componentWillUnmount(){ clearTimeout(this._toast); clearTimeout(this._k1); clearTimeout(this._k2); clearTimeout(this._otpT); clearTimeout(this._splashT); clearTimeout(this._launchT); document.removeEventListener('keydown', this._onKeyActivate); window.removeEventListener('resize', this._onResize); }
 
   componentDidMount(){
     this._onKeyActivate = (e)=>{
@@ -252,6 +257,8 @@ class App extends React.Component {
       }
     };
     document.addEventListener('keydown', this._onKeyActivate);
+    this._onResize = ()=>{ this.setState({ winW: window.innerWidth }); };
+    window.addEventListener('resize', this._onResize);
     this._a11yPass();
     try {
       const raw = localStorage.getItem('lune_saved_card');
@@ -589,6 +596,34 @@ class App extends React.Component {
     );
   }
 
+  renderDesktopNav({ store, isMember, initial, sub }){
+    const s = this.state;
+    const count = this.cartCountNum();
+    return (
+      <div style={{flexShrink:0, display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 32px', background:'#141414', color:'#f4f4f2', borderBottom:'1px solid rgba(255,255,255,0.08)'}}>
+        <div className="clickable" onClick={()=>this.go('store')} style={{display:'flex', alignItems:'center', gap:10, cursor:'pointer'}}>
+          <img src={IMG('lune-rocket-white.png')} alt="Lune" style={{width:26, height:26, objectFit:'contain', display:'block'}}/>
+          <span style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:17, letterSpacing:'-0.01em'}}>LUNE</span>
+        </div>
+        <div style={{display:'flex', alignItems:'center', gap:24}}>
+          <span className="clickable link-muted" onClick={()=>this.go('store')} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'#c3b8ab', cursor:'pointer'}}>{store.name} · CHANGE</span>
+          <span className="clickable link-muted" onClick={()=>this.go('schedule')} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'#c3b8ab', cursor:'pointer'}}>{s.pickupMode==='asap' ? 'ASAP ~15min' : (s.day+' '+s.time)}</span>
+          {isMember &&
+            <span className="clickable link-muted" onClick={()=>this.go('rewards')} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'#e0c9a8', cursor:'pointer'}}>{money(s.rewards)} REWARDS</span>
+          }
+          {count>0 &&
+            <span className="clickable magnetic-btn" onClick={()=>this.go('bag')} onMouseMove={(e)=>this.magnetic(e)} onMouseLeave={(e)=>this.magneticReset(e)} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:12, background:'#f2ede6', color:'#17120d', borderRadius:20, padding:'9px 16px', cursor:'pointer'}}>BAG · {count} · {money(sub)}</span>
+          }
+          {isMember ? (
+            <span className="clickable avatar-btn" onClick={()=>this.go('profile')} style={{width:34, height:34, borderRadius:'50%', flexShrink:0, background:'linear-gradient(145deg,#3a2a1c,#17120d)', border:'1px solid rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:13, color:'#f2ede6', cursor:'pointer'}}>{initial}</span>
+          ) : (
+            <span className="clickable link-muted" onClick={()=>this.go('login')} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'#f2ede6', cursor:'pointer'}}>SIGN IN</span>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   render(){
     const s = this.state;
     const storeData = STORES.map(st=>({ ...st, select:()=>this.setState({ store:st, screen:'menu' }) }));
@@ -602,7 +637,11 @@ class App extends React.Component {
     const isMember = !s.guest && !!s.user;
     const isGuest = s.guest;
     const ms = s.menuScrolled;
-    const darkScreens = ['store','confirm','track','item','splash','login','otp','rewards','profile','launching','signupFirst','signupLast','signupDob','signupDone','orderHistory','favourites'].includes(s.screen);
+    const isDesktop = s.winW >= 880;
+    const WIDE_SCREENS = ['store','menu','item','bag','pickup'];
+    const NAV_SCREENS = ['store','menu','rewards','profile','orderHistory','favourites'];
+    const isWideScreen = WIDE_SCREENS.includes(s.screen);
+    const showDesktopNav = isDesktop && NAV_SCREENS.includes(s.screen);
     const initial = (s.user||'L').trim().charAt(0).toUpperCase();
     const now = new Date().getHours();
     const greetingKicker = now<12 ? 'GOOD MORNING' : (now<17 ? 'GOOD AFTERNOON' : 'GOOD EVENING');
@@ -628,19 +667,14 @@ class App extends React.Component {
     const phoneReady = s.phone.length>=9;
     const otpBoxes = [0,1,2,3].map(i=>({ char:s.otp[i]||'', border: i===s.otp.length ? 'rgba(224,201,168,0.8)' : 'rgba(255,255,255,0.16)' }));
 
-    const statusBg = darkScreens ? 'transparent' : '#f4f4f2';
-    const statusFg = darkScreens ? '#f2f1ee' : '#141414';
-
     return (
-      <div style={{width:390, background:'#000', borderRadius:50, padding:12, boxShadow:'0 40px 90px -30px rgba(20,20,25,0.6)'}}>
-        <div style={{position:'relative', width:366, height:792, background:'#f4f4f2', borderRadius:38, overflow:'hidden', color:'#141414'}}>
-
-          <div style={{position:'absolute', top:0, left:0, right:0, zIndex:40, display:'flex', justifyContent:'space-between', alignItems:'center', padding:'14px 26px 8px', fontFamily:"'JetBrains Mono',monospace", fontSize:12, background:statusBg, color:statusFg}}>
-            <span>9:41</span><span style={{width:52, height:8, background:statusFg, borderRadius:20, opacity:0.85}}></span><span>&#9679;</span>
-          </div>
+      <div style={{position:'relative', height:'100dvh', overflow:'hidden', background:'#e7e4dd', color:'#141414', display:'flex', flexDirection:'column'}}>
+        {showDesktopNav && this.renderDesktopNav({ store, isMember, initial, cart, sub })}
+        <div style={{flex:'1 1 0%', minHeight:0, position:'relative', overflow:'hidden', background:'#f4f4f2', display: (isDesktop && !isWideScreen) ? 'flex' : 'block', justifyContent:'center'}}>
+        <div style={{width:'100%', maxWidth: (isDesktop && !isWideScreen) ? 480 : 'none', height:'100%', position:'relative'}}>
 
           {s.screen==='splash' &&
-            <div className="clickable" onClick={()=>this.go('login')} style={{height:792, background:'#0b0805', color:'#f2f1ee', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', position:'relative', overflow:'hidden', animation:'lune-enter .4s ease both'}}>
+            <div className="clickable" onClick={()=>this.go('login')} style={{height:'100%', background:'#0b0805', color:'#f2f1ee', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', position:'relative', overflow:'hidden', animation:'lune-enter .4s ease both'}}>
               <Starfield/>
               <div style={{position:'relative', display:'flex', flexDirection:'column', alignItems:'center', animation:'lune-rise 1s cubic-bezier(.16,.7,.2,1) both'}}>
                 <img src={IMG('lune-rocket-white.png')} alt="" style={{width:150, height:150, objectFit:'contain', display:'block', filter:'drop-shadow(0 0 40px rgba(170,130,90,0.55))', animation:'lune-fly 6s ease-in-out 1s infinite'}}/>
@@ -651,7 +685,7 @@ class App extends React.Component {
           }
 
           {s.screen==='login' &&
-            <div style={{height:792, background:'#0b0805', color:'#f2f1ee', display:'flex', flexDirection:'column', padding:'64px 26px 30px', position:'relative', overflow:'hidden', animation:'lune-enter .32s ease both'}}>
+            <div style={{height:'100%', background:'#0b0805', color:'#f2f1ee', display:'flex', flexDirection:'column', padding:'64px 26px 30px', position:'relative', overflow:'hidden', animation:'lune-enter .32s ease both'}}>
               <Starfield/>
               <div style={{position:'relative', display:'flex', flexDirection:'column', height:'100%'}}>
                 <img src={IMG('lune-rocket-white.png')} alt="" style={{width:42, height:42, objectFit:'contain', display:'block'}}/>
@@ -675,7 +709,7 @@ class App extends React.Component {
           }
 
           {s.screen==='otp' &&
-            <div style={{height:792, background:'#0b0805', color:'#f2f1ee', display:'flex', flexDirection:'column', padding:'64px 26px 30px', position:'relative', overflow:'hidden', animation:'lune-enter .32s ease both'}}>
+            <div style={{height:'100%', background:'#0b0805', color:'#f2f1ee', display:'flex', flexDirection:'column', padding:'64px 26px 30px', position:'relative', overflow:'hidden', animation:'lune-enter .32s ease both'}}>
               <Starfield/>
               <div style={{position:'relative', display:'flex', flexDirection:'column', height:'100%'}}>
                 <div className="clickable link-muted" onClick={()=>this.go('login')} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'#9a8f80', cursor:'pointer'}}>‹ BACK</div>
@@ -700,7 +734,7 @@ class App extends React.Component {
           }
 
           {s.screen==='signupFirst' &&
-            <div style={{height:792, background:'#0b0805', color:'#f2f1ee', display:'flex', flexDirection:'column', padding:'64px 26px 30px', position:'relative', overflow:'hidden', animation:'lune-enter .32s ease both'}}>
+            <div style={{height:'100%', background:'#0b0805', color:'#f2f1ee', display:'flex', flexDirection:'column', padding:'64px 26px 30px', position:'relative', overflow:'hidden', animation:'lune-enter .32s ease both'}}>
               <Starfield/>
               <div style={{position:'relative', display:'flex', flexDirection:'column', height:'100%'}}>
                 <div className="clickable link-muted" onClick={()=>this.go('otp')} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'#9a8f80', cursor:'pointer'}}>‹ BACK</div>
@@ -717,7 +751,7 @@ class App extends React.Component {
           }
 
           {s.screen==='signupLast' &&
-            <div style={{height:792, background:'#0b0805', color:'#f2f1ee', display:'flex', flexDirection:'column', padding:'64px 26px 30px', position:'relative', overflow:'hidden', animation:'lune-enter .32s ease both'}}>
+            <div style={{height:'100%', background:'#0b0805', color:'#f2f1ee', display:'flex', flexDirection:'column', padding:'64px 26px 30px', position:'relative', overflow:'hidden', animation:'lune-enter .32s ease both'}}>
               <Starfield/>
               <div style={{position:'relative', display:'flex', flexDirection:'column', height:'100%'}}>
                 <div className="clickable link-muted" onClick={()=>this.setState({screen:'signupFirst'})} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'#9a8f80', cursor:'pointer'}}>‹ BACK</div>
@@ -734,7 +768,7 @@ class App extends React.Component {
           }
 
           {s.screen==='signupDob' &&
-            <div style={{height:792, background:'#0b0805', color:'#f2f1ee', display:'flex', flexDirection:'column', padding:'64px 26px 30px', position:'relative', overflow:'hidden', animation:'lune-enter .32s ease both'}}>
+            <div style={{height:'100%', background:'#0b0805', color:'#f2f1ee', display:'flex', flexDirection:'column', padding:'64px 26px 30px', position:'relative', overflow:'hidden', animation:'lune-enter .32s ease both'}}>
               <Starfield/>
               <div style={{position:'relative', display:'flex', flexDirection:'column', height:'100%'}}>
                 <div className="clickable link-muted" onClick={()=>this.setState({screen:'signupLast'})} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'#9a8f80', cursor:'pointer'}}>‹ BACK</div>
@@ -760,7 +794,7 @@ class App extends React.Component {
           }
 
           {s.screen==='signupDone' &&
-            <div style={{height:792, background:'#0b0805', color:'#f2f1ee', display:'flex', flexDirection:'column', padding:'70px 28px 30px', position:'relative', overflow:'hidden', animation:'lune-enter .32s ease both'}}>
+            <div style={{height:'100%', background:'#0b0805', color:'#f2f1ee', display:'flex', flexDirection:'column', padding:'70px 28px 30px', position:'relative', overflow:'hidden', animation:'lune-enter .32s ease both'}}>
               <Starfield/>
               <div style={{position:'relative', flex:1}}>
                 <img src={IMG('lune-rocket-white.png')} alt="" style={{width:60, height:60, objectFit:'contain', display:'block', marginBottom:28, filter:'drop-shadow(0 0 40px rgba(170,130,90,0.55))', animation:'lune-pop .5s ease both'}}/>
@@ -779,10 +813,10 @@ class App extends React.Component {
           }
 
           {s.screen==='store' &&
-            <div className="lune-scroll" style={{height:792, overflowY:'auto', animation:'lune-enter .32s ease both'}}>
+            <div className="lune-scroll" style={{height:'100%', overflowY:'auto', animation:'lune-enter .32s ease both'}}>
               <div style={{background:'#0b0805', color:'#f2f1ee', padding:'66px 28px 60px', position:'relative', overflow:'hidden'}}>
                 <Starfield/>
-                <div style={{position:'relative'}}>
+                <div style={{position:'relative', maxWidth: isDesktop ? 1100 : 'none', margin:'0 auto'}}>
                   <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start'}}>
                     <img src={IMG('lune-rocket-white.png')} alt="" style={{width:46, height:46, objectFit:'contain', display:'block'}}/>
                     {isMember &&
@@ -813,6 +847,7 @@ class App extends React.Component {
               </div>
 
               <div style={{padding:'22px 24px 0'}}>
+              <div style={{maxWidth: isDesktop ? 1100 : 'none', margin:'0 auto'}}>
                 <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:12}}>
                   <span style={{position:'relative', width:8, height:8, flexShrink:0}}>
                     <span style={{position:'absolute', inset:0, borderRadius:'50%', background:ACC, animation:'lune-ping 1.8s ease-out infinite'}}></span>
@@ -831,7 +866,7 @@ class App extends React.Component {
                   <div style={{fontSize:20, color:'#141414'}}>›</div>
                 </div>
                 <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:11, letterSpacing:'0.14em', color:'#a8a297', margin:'26px 0 12px'}}>OTHER STORES</div>
-                <div style={{display:'flex', flexDirection:'column', gap:12}}>
+                <div style={{display: isDesktop ? 'grid' : 'flex', gridTemplateColumns: isDesktop ? 'repeat(2,1fr)' : 'none', flexDirection:'column', gap:12}}>
                   {others.map(store2=>(
                     <div key={store2.key} className="clickable store-card" onClick={store2.select} style={{border:'1px solid #e0dfda', borderRadius:14, padding:'16px 18px', display:'flex', justifyContent:'space-between', alignItems:'center', cursor:'pointer', background:'#fff'}}>
                       <div>
@@ -845,6 +880,7 @@ class App extends React.Component {
                     </div>
                   ))}
                 </div>
+              </div>
               </div>
             </div>
           }
@@ -879,9 +915,11 @@ class App extends React.Component {
             const pickupPad = ms ? '6px 11px' : '8px 12px';
             const avatarSize = ms ? 26 : 38;
             const avatarFont = ms ? 11 : 15;
+            const deskMax = isDesktop ? 1100 : 'none';
             return (
-            <div style={{height:792, display:'flex', flexDirection:'column', animation:'lune-enter .32s ease both'}}>
+            <div style={{height:'100%', display:'flex', flexDirection:'column', animation:'lune-enter .32s ease both'}}>
               <div style={{padding: menuHeadPadTop+'px 24px 0', background:'#f4f4f2', color:'#141414', position:'relative', zIndex:5, boxShadow:menuHeadShadow, transition:'padding .28s ease, box-shadow .28s ease'}}>
+              <div style={{maxWidth:deskMax, margin:'0 auto'}}>
                 <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', paddingTop:6, gap:12}}>
                   <div style={{display:'flex', alignItems:'center', gap:10, minWidth:0}}>
                     <img src={IMG('lune-rocket.png')} alt="Lune" style={{width:26, height:26, flexShrink:0, objectFit:'contain', display:'block'}}/>
@@ -907,7 +945,9 @@ class App extends React.Component {
                   {s.tabIndicator && <span className="tab-underline" style={{left:s.tabIndicator.left, width:s.tabIndicator.width}}></span>}
                 </div>
               </div>
+              </div>
               <div className="lune-scroll" onScroll={(e)=>this.onMenuScroll(e)} style={{flex:1, overflowY:'auto', padding:'4px 24px 120px'}}>
+              <div style={{maxWidth:deskMax, margin:'0 auto'}}>
                 {showReorder &&
                   <React.Fragment>
                     <div style={{display:'flex', justifyContent:'space-between', alignItems:'baseline', marginTop:14}}>
@@ -940,7 +980,7 @@ class App extends React.Component {
                         const fScale = Math.max(0.9, 1 - dist*0.06);
                         const fOpacity = Math.max(0.55, 1 - dist*0.35);
                         return (
-                        <div key={feature.key} className="clickable feature-card" onClick={feature.open} style={{position:'relative', flex:'0 0 84%', scrollSnapAlign:'center', height:340, borderRadius:18, overflow:'hidden', cursor:'pointer', boxShadow:'0 22px 44px -26px rgba(20,20,25,0.55)', transform:'scale('+fScale+')', opacity:fOpacity, transition:'transform .35s cubic-bezier(.34,1.56,.64,1), opacity .35s ease'}}>
+                        <div key={feature.key} className="clickable feature-card" onClick={feature.open} style={{position:'relative', flex: isDesktop ? '0 0 380px' : '0 0 84%', scrollSnapAlign:'center', height:340, borderRadius:18, overflow:'hidden', cursor:'pointer', boxShadow:'0 22px 44px -26px rgba(20,20,25,0.55)', transform:'scale('+fScale+')', opacity:fOpacity, transition:'transform .35s cubic-bezier(.34,1.56,.64,1), opacity .35s ease'}}>
                           <div style={{position:'absolute', inset:0}}>
                             {feature.img
                               ? <img src={feature.img} alt={feature.name} className="lune-photo" style={{width:'100%', height:'100%', objectFit:'cover', display:'block'}}/>
@@ -979,7 +1019,7 @@ class App extends React.Component {
                   </div>
                 }
                 {(!showFeature && s.menuView==='grid') ? (
-                  <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'22px 14px', paddingBottom:8}}>
+                  <div style={{display:'grid', gridTemplateColumns: isDesktop ? 'repeat(4,1fr)' : '1fr 1fr', gap: isDesktop ? '28px 20px' : '22px 14px', paddingBottom:8}}>
                     {items.map(row=>(
                       <div key={row.key} className="clickable menu-grid-card" onClick={row.open} style={{cursor:'pointer', animation:'lune-fade-up .5s cubic-bezier(.16,.7,.2,1) both', animationDelay:row.inDelay}}>
                         <div style={{position:'relative', width:'100%', aspectRatio:'1', borderRadius:14, overflow:'hidden', background:'#efece6'}}>
@@ -1016,10 +1056,13 @@ class App extends React.Component {
                   ))
                 )}
               </div>
+              </div>
               {s.cart.length>0 &&
                 <div style={{position:'absolute', left:0, right:0, bottom:0, padding:'14px 24px 26px', background:'linear-gradient(transparent,#f4f4f2 34%)'}}>
+                  <div style={{maxWidth:deskMax, margin:'0 auto'}}>
                   <div key={this.cartCountNum()} className="clickable magnetic-btn btn-dark" onClick={()=>this.go('bag')} onMouseMove={(e)=>this.magnetic(e)} onMouseLeave={(e)=>this.magneticReset(e)} style={{display:'flex', justifyContent:'space-between', alignItems:'center', background:'#141414', color:'#f4f4f2', borderRadius:14, padding:'16px 20px', fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer', animation:'lune-pop .3s cubic-bezier(.34,1.56,.64,1) both'}}>
                     <span>BAG · {this.cartCountNum()} ITEMS</span><span>{money(sub)} →</span>
+                  </div>
                   </div>
                 </div>
               }
@@ -1028,7 +1071,7 @@ class App extends React.Component {
           })()}
 
           {s.screen==='schedule' &&
-            <div style={{height:792, display:'flex', flexDirection:'column', animation:'lune-enter .32s ease both'}}>
+            <div style={{height:'100%', display:'flex', flexDirection:'column', animation:'lune-enter .32s ease both'}}>
               <div style={{padding:'44px 24px 14px'}}>
                 <div className="clickable link-accent" onClick={()=>this.go('menu')} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'#8a8375', cursor:'pointer'}}>‹ MENU</div>
                 <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:26, letterSpacing:'-0.02em', marginTop:12}}>Pickup time</div>
@@ -1080,8 +1123,67 @@ class App extends React.Component {
             const activeIsFav = !!s.fav[a.id];
             const activeIsDrink = !!(a.drink && a.milk);
             const activeMilks = mkOpts(['Full cream','Soy','Oat','Almond'], s.milk, 'milk');
+            const detailsBody = (
+              <React.Fragment>
+                {activeIsDrink &&
+                  <div style={{marginBottom:16}}>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, letterSpacing:'0.14em', color:'#9a8f80', marginBottom:9}}>MILK</div>
+                    <div className="lune-scroll" style={{display:'flex', gap:7, overflowX:'auto'}}>
+                      {activeMilks.map(opt=>(
+                        <span key={opt.label} className="clickable glass-chip" onClick={opt.select} style={{cursor:'pointer', flexShrink:0, fontFamily:"'JetBrains Mono',monospace", fontSize:11, padding:'8px 14px', borderRadius:22, border:'1px solid '+opt.borderColor, background:opt.background, color:opt.color, backdropFilter:'blur(10px)'}}>{opt.label}</span>
+                      ))}
+                    </div>
+                  </div>
+                }
+
+                <p style={{fontSize:12.5, lineHeight:1.6, color:'#c9bcab', margin:'0 0 12px'}}>{a.desc}</p>
+                <div style={{display:'flex', justifyContent:'space-between', fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, color:'#9a8f80', letterSpacing:'0.06em', paddingBottom:16}}>
+                  <span>ALLERGENS</span><span style={{color:'#d3c6b5', textAlign:'right', maxWidth:210}}>{a.allergens}</span>
+                </div>
+
+                <div style={{display:'flex', gap:10, alignItems:'stretch'}}>
+                  <div style={{display:'flex', alignItems:'center', gap:14, padding:'0 16px', borderRadius:16, background:'rgba(255,255,255,0.09)', border:'1px solid rgba(255,255,255,0.16)', backdropFilter:'blur(12px)', fontFamily:"'JetBrains Mono',monospace", fontSize:15}}>
+                    <span className="clickable qty-btn" onClick={()=>this.setState({ qty:Math.max(1,s.qty-1) })} style={{cursor:'pointer'}}>−</span>
+                    <span style={{minWidth:14, textAlign:'center'}}>{s.qty}</span>
+                    <span className="clickable qty-btn" onClick={()=>this.setState({ qty:s.qty+1 })} style={{cursor:'pointer'}}>+</span>
+                  </div>
+                  <div className="clickable magnetic-btn btn-add-bag" onClick={()=>this.addActive()} onMouseMove={(e)=>this.magnetic(e)} onMouseLeave={(e)=>this.magneticReset(e)} style={{flex:1, display:'flex', justifyContent:'space-between', alignItems:'center', background:'#f2ede6', color:'#1a140e', borderRadius:16, padding:'16px 20px', fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer'}}>
+                    <span>ADD TO BAG</span><span>{money(activeUnit*s.qty)}</span>
+                  </div>
+                </div>
+              </React.Fragment>
+            );
+            if(isDesktop){
+              return (
+              <div style={{height:'100%', position:'relative', overflow:'hidden', color:'#f2ede6', background:'#141414', animation:'lune-enter .34s ease both', display:'flex'}}>
+                <div style={{width:'46%', maxWidth:480, flexShrink:0, position:'relative', overflow:'hidden', background:'radial-gradient(130% 90% at 52% 26%, #443122 0%, #2a1e14 46%, #16100a 100%)', display:'flex', alignItems:'center', justifyContent:'center'}}>
+                  <div style={{position:'absolute', inset:0, background:'radial-gradient(58% 42% at 64% 44%, rgba(206,158,101,0.30), transparent 72%)'}}></div>
+                  <Starfield/>
+                  <span className="clickable icon-btn-glass" onClick={()=>this.go('menu')} style={{position:'absolute', top:28, left:28, zIndex:12, width:40, height:40, borderRadius:'50%', background:'rgba(255,255,255,0.10)', backdropFilter:'blur(14px)', border:'1px solid rgba(255,255,255,0.16)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, cursor:'pointer'}}>‹</span>
+                  <div style={{position:'relative', width:260, height:260, borderRadius:20, overflow:'hidden', boxShadow:'0 30px 60px -24px rgba(0,0,0,0.7)', zIndex:4}}>
+                    {this.thumbEl(a)}
+                  </div>
+                </div>
+                <div className="lune-scroll" style={{flex:1, overflowY:'auto', padding:'48px 56px 40px', position:'relative'}}>
+                  <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start'}}>
+                    <div>
+                      <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10.5, letterSpacing:'0.18em', color:'#d3ba98'}}>{activeKicker}</div>
+                      <h2 style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:36, lineHeight:1.08, letterSpacing:'-0.02em', margin:'9px 0 0'}}>{a.name}</h2>
+                    </div>
+                    <span className="clickable icon-btn-glass" onClick={()=>this.toggleFav()} style={{width:40, height:40, borderRadius:'50%', flexShrink:0, background:'rgba(255,255,255,0.10)', border:'1px solid rgba(255,255,255,0.16)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, cursor:'pointer', color: activeIsFav ? '#e07a5f' : '#f2ede6', animation: activeIsFav ? 'lune-heart-pop .4s cubic-bezier(.34,1.56,.64,1) both' : 'none'}}>{activeIsFav ? '♥' : '♡'}</span>
+                  </div>
+                  <div style={{display:'flex', gap:7, flexWrap:'wrap', marginTop:18, marginBottom:26}}>
+                    {activeNotes.map((note,i)=>(
+                      <span key={i} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, letterSpacing:'0.06em', padding:'6px 12px', borderRadius:20, border:'1px solid rgba(255,255,255,0.20)', color:'#e0d2bf'}}>{note}</span>
+                    ))}
+                  </div>
+                  <div style={{maxWidth:420}}>{detailsBody}</div>
+                </div>
+              </div>
+              );
+            }
             return (
-            <div style={{height:792, position:'relative', overflow:'hidden', color:'#f2ede6', background:'radial-gradient(130% 90% at 52% 26%, #443122 0%, #2a1e14 46%, #16100a 100%)', animation:'lune-enter .34s ease both'}}>
+            <div style={{height:'100%', position:'relative', overflow:'hidden', color:'#f2ede6', background:'radial-gradient(130% 90% at 52% 26%, #443122 0%, #2a1e14 46%, #16100a 100%)', animation:'lune-enter .34s ease both'}}>
               <div style={{position:'absolute', inset:0, background:'radial-gradient(58% 42% at 64% 44%, rgba(206,158,101,0.30), transparent 72%)'}}></div>
               <div style={{position:'absolute', left:0, right:0, top:'63%', bottom:0, background:'linear-gradient(rgba(0,0,0,0), rgba(0,0,0,0.34))'}}></div>
               <Starfield/>
@@ -1111,86 +1213,88 @@ class App extends React.Component {
               </div>
 
               <div className="lune-scroll" style={{position:'absolute', left:0, right:0, bottom:0, zIndex:9, maxHeight:'60%', overflowY:'auto', padding:'26px 20px 24px', background:'linear-gradient(rgba(15,11,7,0), rgba(15,11,7,0.82) 26%, rgba(15,11,7,0.95))'}}>
-                {activeIsDrink &&
-                  <div style={{marginBottom:16}}>
-                    <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, letterSpacing:'0.14em', color:'#9a8f80', marginBottom:9}}>MILK</div>
-                    <div className="lune-scroll" style={{display:'flex', gap:7, overflowX:'auto'}}>
-                      {activeMilks.map(opt=>(
-                        <span key={opt.label} className="clickable glass-chip" onClick={opt.select} style={{cursor:'pointer', flexShrink:0, fontFamily:"'JetBrains Mono',monospace", fontSize:11, padding:'8px 14px', borderRadius:22, border:'1px solid '+opt.borderColor, background:opt.background, color:opt.color, backdropFilter:'blur(10px)'}}>{opt.label}</span>
-                      ))}
-                    </div>
-                  </div>
-                }
-
-                <p style={{fontSize:12.5, lineHeight:1.6, color:'#c9bcab', margin:'0 0 12px'}}>{a.desc}</p>
-                <div style={{display:'flex', justifyContent:'space-between', fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, color:'#9a8f80', letterSpacing:'0.06em', paddingBottom:16}}>
-                  <span>ALLERGENS</span><span style={{color:'#d3c6b5', textAlign:'right', maxWidth:210}}>{a.allergens}</span>
-                </div>
-
-                <div style={{display:'flex', gap:10, alignItems:'stretch'}}>
-                  <div style={{display:'flex', alignItems:'center', gap:14, padding:'0 16px', borderRadius:16, background:'rgba(255,255,255,0.09)', border:'1px solid rgba(255,255,255,0.16)', backdropFilter:'blur(12px)', fontFamily:"'JetBrains Mono',monospace", fontSize:15}}>
-                    <span className="clickable qty-btn" onClick={()=>this.setState({ qty:Math.max(1,s.qty-1) })} style={{cursor:'pointer'}}>−</span>
-                    <span style={{minWidth:14, textAlign:'center'}}>{s.qty}</span>
-                    <span className="clickable qty-btn" onClick={()=>this.setState({ qty:s.qty+1 })} style={{cursor:'pointer'}}>+</span>
-                  </div>
-                  <div className="clickable magnetic-btn btn-add-bag" onClick={()=>this.addActive()} onMouseMove={(e)=>this.magnetic(e)} onMouseLeave={(e)=>this.magneticReset(e)} style={{flex:1, display:'flex', justifyContent:'space-between', alignItems:'center', background:'#f2ede6', color:'#1a140e', borderRadius:16, padding:'16px 20px', fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer'}}>
-                    <span>ADD TO BAG</span><span>{money(activeUnit*s.qty)}</span>
-                  </div>
-                </div>
+                {detailsBody}
               </div>
             </div>
             );
           })()}
 
-          {s.screen==='bag' &&
-            <div style={{height:792, display:'flex', flexDirection:'column', animation:'lune-enter .32s ease both'}}>
+          {s.screen==='bag' && (()=>{
+            const bagLines = cart.map(line=>(
+              <div key={line.key} style={{display:'flex', gap:14, alignItems:'flex-start', padding:'16px 0', borderTop:'1px solid #e0dfda'}}>
+                <div style={{width:54, height:54, flexShrink:0, borderRadius:12, overflow:'hidden', background:'#efece6', display:'flex', alignItems:'center', justifyContent:'center'}}>{line.thumb}</div>
+                <div style={{flex:1}}>
+                  <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:15}}>{line.name}</div>
+                  <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#8a8375', marginTop:3}}>{line.variant}</div>
+                  <div style={{display:'flex', alignItems:'center', gap:16, marginTop:10, fontFamily:"'JetBrains Mono',monospace", fontSize:13}}>
+                    <span className="clickable qty-box" onClick={()=>this.changeLine(line.key,-1)} style={{cursor:'pointer', width:26, height:26, border:'1px solid #d7d6d0', borderRadius:7, display:'flex', alignItems:'center', justifyContent:'center'}}>−</span>
+                    <span>{line.qty}</span>
+                    <span className="clickable qty-box" onClick={()=>this.changeLine(line.key,1)} style={{cursor:'pointer', width:26, height:26, border:'1px solid #d7d6d0', borderRadius:7, display:'flex', alignItems:'center', justifyContent:'center'}}>+</span>
+                  </div>
+                </div>
+                <div style={{textAlign:'right'}}>
+                  <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:13}}>{line.total}</div>
+                  <div className="clickable link-accent" onClick={()=>this.removeLine(line.key)} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#a8a297', marginTop:8, cursor:'pointer'}}>REMOVE</div>
+                </div>
+              </div>
+            ));
+            const goesWell = s.cart.length>0 && !hasDrink && (
+              <div style={{marginTop:20, border:'1px dashed #cfcec7', borderRadius:14, padding:'14px 16px', display:'flex', alignItems:'center', gap:14, background:'#fbfbf9'}}>
+                <div style={{width:44, height:44, borderRadius:10, flexShrink:0, background:'repeating-linear-gradient(135deg,#e9e9e5,#e9e9e5 6px,#dededa 6px,#dededa 12px)'}}></div>
+                <div style={{flex:1}}>
+                  <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, color:'#a8a297', letterSpacing:'0.1em'}}>GOES WELL WITH</div>
+                  <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:14, marginTop:2}}>A coffee by ONA</div>
+                </div>
+                <div className="clickable link-accent" onClick={()=>this.openItem(MENU.coffee.find(x=>x.id==='latte'))} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:ACC, cursor:'pointer'}}>ADD +</div>
+              </div>
+            );
+            const summary = (
+              <div style={{display:'flex', flexDirection:'column', gap:9, fontFamily:"'JetBrains Mono',monospace", fontSize:12.5, color:'#6b6459'}}>
+                <div style={{display:'flex', justifyContent:'space-between', borderTop:'1px solid #141414', paddingTop:14}}><span>SUBTOTAL</span><span style={{color:'#141414'}}>{money(sub)}</span></div>
+                <div style={{display:'flex', justifyContent:'space-between'}}><span>PICKUP</span><span style={{color:'#141414'}}>{pickupShort}</span></div>
+              </div>
+            );
+            const checkoutBtn = (
+              <div className="clickable magnetic-btn btn-dark" onClick={()=>this.go('pickup')} onMouseMove={(e)=>this.magnetic(e)} onMouseLeave={(e)=>this.magneticReset(e)} style={{display:'flex', justifyContent:'space-between', alignItems:'center', background:'#141414', color:'#f4f4f2', borderRadius:14, padding:'17px 22px', fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer'}}>
+                <span>CHECKOUT</span><span>{money(sub)} →</span>
+              </div>
+            );
+            if(isDesktop){
+              return (
+              <div style={{height:'100%', display:'flex', flexDirection:'column', animation:'lune-enter .32s ease both'}}>
+                <div style={{padding:'44px 32px 14px', maxWidth:1100, margin:'0 auto', width:'100%'}}>
+                  <div className="clickable link-accent" onClick={()=>this.go('menu')} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'#8a8375', cursor:'pointer'}}>‹ MENU</div>
+                  <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:26, letterSpacing:'-0.02em', marginTop:12}}>Your bag</div>
+                </div>
+                <div className="lune-scroll" style={{flex:1, overflowY:'auto', padding:'0 32px 32px'}}>
+                  <div style={{maxWidth:1100, margin:'0 auto', display:'flex', gap:40, alignItems:'flex-start'}}>
+                    <div style={{flex:1}}>{bagLines}{goesWell}</div>
+                    <div style={{width:320, flexShrink:0, position:'sticky', top:0, border:'1px solid #e0dfda', borderRadius:16, padding:22, background:'#fff'}}>
+                      {summary}
+                      <div style={{marginTop:18}}>{checkoutBtn}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              );
+            }
+            return (
+            <div style={{height:'100%', display:'flex', flexDirection:'column', animation:'lune-enter .32s ease both'}}>
               <div style={{padding:'44px 24px 14px'}}>
                 <div className="clickable link-accent" onClick={()=>this.go('menu')} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'#8a8375', cursor:'pointer'}}>‹ MENU</div>
                 <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:26, letterSpacing:'-0.02em', marginTop:12}}>Your bag</div>
               </div>
               <div className="lune-scroll" style={{flex:1, overflowY:'auto', padding:'0 24px 20px'}}>
-                {cart.map(line=>(
-                  <div key={line.key} style={{display:'flex', gap:14, alignItems:'flex-start', padding:'16px 0', borderTop:'1px solid #e0dfda'}}>
-                    <div style={{width:54, height:54, flexShrink:0, borderRadius:12, overflow:'hidden', background:'#efece6', display:'flex', alignItems:'center', justifyContent:'center'}}>{line.thumb}</div>
-                    <div style={{flex:1}}>
-                      <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:15}}>{line.name}</div>
-                      <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#8a8375', marginTop:3}}>{line.variant}</div>
-                      <div style={{display:'flex', alignItems:'center', gap:16, marginTop:10, fontFamily:"'JetBrains Mono',monospace", fontSize:13}}>
-                        <span className="clickable qty-box" onClick={()=>this.changeLine(line.key,-1)} style={{cursor:'pointer', width:26, height:26, border:'1px solid #d7d6d0', borderRadius:7, display:'flex', alignItems:'center', justifyContent:'center'}}>−</span>
-                        <span>{line.qty}</span>
-                        <span className="clickable qty-box" onClick={()=>this.changeLine(line.key,1)} style={{cursor:'pointer', width:26, height:26, border:'1px solid #d7d6d0', borderRadius:7, display:'flex', alignItems:'center', justifyContent:'center'}}>+</span>
-                      </div>
-                    </div>
-                    <div style={{textAlign:'right'}}>
-                      <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:13}}>{line.total}</div>
-                      <div className="clickable link-accent" onClick={()=>this.removeLine(line.key)} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#a8a297', marginTop:8, cursor:'pointer'}}>REMOVE</div>
-                    </div>
-                  </div>
-                ))}
-
-                {s.cart.length>0 && !hasDrink &&
-                  <div style={{marginTop:20, border:'1px dashed #cfcec7', borderRadius:14, padding:'14px 16px', display:'flex', alignItems:'center', gap:14, background:'#fbfbf9'}}>
-                    <div style={{width:44, height:44, borderRadius:10, flexShrink:0, background:'repeating-linear-gradient(135deg,#e9e9e5,#e9e9e5 6px,#dededa 6px,#dededa 12px)'}}></div>
-                    <div style={{flex:1}}>
-                      <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, color:'#a8a297', letterSpacing:'0.1em'}}>GOES WELL WITH</div>
-                      <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:14, marginTop:2}}>A coffee by ONA</div>
-                    </div>
-                    <div className="clickable link-accent" onClick={()=>this.openItem(MENU.coffee.find(x=>x.id==='latte'))} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:ACC, cursor:'pointer'}}>ADD +</div>
-                  </div>
-                }
-
-                <div style={{marginTop:22, display:'flex', flexDirection:'column', gap:9, fontFamily:"'JetBrains Mono',monospace", fontSize:12.5, color:'#6b6459'}}>
-                  <div style={{display:'flex', justifyContent:'space-between', borderTop:'1px solid #141414', paddingTop:14}}><span>SUBTOTAL</span><span style={{color:'#141414'}}>{money(sub)}</span></div>
-                  <div style={{display:'flex', justifyContent:'space-between'}}><span>PICKUP</span><span style={{color:'#141414'}}>{pickupShort}</span></div>
-                </div>
+                {bagLines}
+                {goesWell}
+                <div style={{marginTop:22}}>{summary}</div>
               </div>
               <div style={{padding:'14px 24px 26px'}}>
-                <div className="clickable magnetic-btn btn-dark" onClick={()=>this.go('pickup')} onMouseMove={(e)=>this.magnetic(e)} onMouseLeave={(e)=>this.magneticReset(e)} style={{display:'flex', justifyContent:'space-between', alignItems:'center', background:'#141414', color:'#f4f4f2', borderRadius:14, padding:'17px 22px', fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer'}}>
-                  <span>CHECKOUT</span><span>{money(sub)} →</span>
-                </div>
+                {checkoutBtn}
               </div>
             </div>
-          }
+            );
+          })()}
 
           {s.screen==='pickup' && (()=>{
             const tipDefs = [
@@ -1203,13 +1307,8 @@ class App extends React.Component {
             const rewardsKnobX = s.applyRewards ? 21 : 3;
             const payTotal = this.payTotalNum();
             const earnAmount = money(Math.round(sub*0.05*100)/100);
-            return (
-            <div style={{height:792, display:'flex', flexDirection:'column', animation:'lune-enter .32s ease both'}}>
-              <div style={{padding:'44px 24px 14px'}}>
-                <div className="clickable link-accent" onClick={()=>this.go('bag')} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'#8a8375', cursor:'pointer'}}>‹ BAG</div>
-                <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:26, letterSpacing:'-0.02em', marginTop:12}}>Checkout</div>
-              </div>
-              <div className="lune-scroll" style={{flex:1, overflowY:'auto', padding:'6px 24px 20px'}}>
+            const checkoutForm = (
+              <React.Fragment>
                 <div style={{border:'1px solid #e0dfda', borderRadius:12, padding:'15px 16px', display:'flex', justifyContent:'space-between', alignItems:'center', background:'#fff'}}>
                   <div>
                     <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:9, letterSpacing:'0.12em', color:'#a8a297', marginBottom:5}}>PICKUP</div>
@@ -1297,6 +1396,10 @@ class App extends React.Component {
                     </div>
                   </div>
                 )}
+              </React.Fragment>
+            );
+            const orderSummary = (
+              <React.Fragment>
                 <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10.5, color:'#a8a297', letterSpacing:'0.1em', margin:'26px 0 12px'}}>YOUR ORDER</div>
                 <div style={{display:'flex', flexDirection:'column'}}>
                   {cart.map(line=>(
@@ -1318,19 +1421,54 @@ class App extends React.Component {
                   }
                   <div style={{display:'flex', justifyContent:'space-between', borderTop:'1px solid #141414', paddingTop:12, fontSize:14}}><span style={{color:'#141414'}}>TOTAL</span><span style={{color:'#141414'}}>{money(payTotal)}</span></div>
                 </div>
-              </div>
-              <div style={{padding:'14px 24px 26px'}}>
+              </React.Fragment>
+            );
+            const placeOrderBtn = (
+              <React.Fragment>
                 <div className="clickable magnetic-btn btn-dark" onClick={()=>this.placeOrder()} onMouseMove={(e)=>this.magnetic(e)} onMouseLeave={(e)=>this.magneticReset(e)} style={{display:'flex', justifyContent:'space-between', alignItems:'center', background: (canPay && cardOk)?'#141414':'#c7c5be', color:'#f4f4f2', borderRadius:14, padding:'17px 22px', fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer'}}>
                   <span>PLACE ORDER</span><span>{money(payTotal)} →</span>
                 </div>
                 <div style={{textAlign:'center', fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#a8a297', marginTop:12}}>{!canPay ? 'YOUR BAG IS EMPTY' : usingSavedCard ? ('CARD ENDING ' + s.savedCard.last4 + ' WILL BE CHARGED') : cardOk ? 'YOUR CARD WILL BE CHARGED ON CONFIRMATION' : 'ENTER YOUR CARD DETAILS TO CONTINUE'}</div>
+              </React.Fragment>
+            );
+            if(isDesktop){
+              return (
+              <div style={{height:'100%', display:'flex', flexDirection:'column', animation:'lune-enter .32s ease both'}}>
+                <div style={{padding:'44px 32px 14px', maxWidth:1100, margin:'0 auto', width:'100%'}}>
+                  <div className="clickable link-accent" onClick={()=>this.go('bag')} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'#8a8375', cursor:'pointer'}}>‹ BAG</div>
+                  <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:26, letterSpacing:'-0.02em', marginTop:12}}>Checkout</div>
+                </div>
+                <div className="lune-scroll" style={{flex:1, overflowY:'auto', padding:'6px 32px 32px'}}>
+                  <div style={{maxWidth:1100, margin:'0 auto', display:'flex', gap:40, alignItems:'flex-start'}}>
+                    <div style={{flex:1}}>{checkoutForm}</div>
+                    <div style={{width:340, flexShrink:0, position:'sticky', top:0, border:'1px solid #e0dfda', borderRadius:16, padding:22, background:'#fff'}}>
+                      {orderSummary}
+                      <div style={{marginTop:18}}>{placeOrderBtn}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              );
+            }
+            return (
+            <div style={{height:'100%', display:'flex', flexDirection:'column', animation:'lune-enter .32s ease both'}}>
+              <div style={{padding:'44px 24px 14px'}}>
+                <div className="clickable link-accent" onClick={()=>this.go('bag')} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'#8a8375', cursor:'pointer'}}>‹ BAG</div>
+                <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:26, letterSpacing:'-0.02em', marginTop:12}}>Checkout</div>
+              </div>
+              <div className="lune-scroll" style={{flex:1, overflowY:'auto', padding:'6px 24px 20px'}}>
+                {checkoutForm}
+                {orderSummary}
+              </div>
+              <div style={{padding:'14px 24px 26px'}}>
+                {placeOrderBtn}
               </div>
             </div>
             );
           })()}
 
           {s.screen==='launching' &&
-            <div style={{height:792, background:'#0b0805', color:'#f2f1ee', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', position:'relative', overflow:'hidden'}}>
+            <div style={{height:'100%', background:'#0b0805', color:'#f2f1ee', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', position:'relative', overflow:'hidden'}}>
               <div style={{position:'absolute', inset:-40, backgroundImage:'radial-gradient(1.5px 1.5px at 22% 34%, rgba(255,255,255,0.55), transparent), radial-gradient(1.3px 1.3px at 74% 18%, rgba(255,255,255,0.44), transparent), radial-gradient(1.5px 1.5px at 48% 78%, rgba(255,255,255,0.44), transparent)', backgroundSize:'200px 200px', animation:'lune-star-mid 4.5s linear infinite'}}></div>
               <div style={{position:'absolute', inset:0, background:'radial-gradient(58% 40% at 50% 58%, rgba(170,130,90,0.18), transparent 70%)'}}></div>
               <div style={{position:'relative', animation:'lune-liftoff 2s cubic-bezier(.55,.06,.68,.19) both'}}>
@@ -1351,7 +1489,7 @@ class App extends React.Component {
           }
 
           {s.screen==='confirm' &&
-            <div style={{height:792, background:'#0b0805', color:'#f2f1ee', display:'flex', flexDirection:'column', padding:'70px 28px 30px', position:'relative', overflow:'hidden', animation:'lune-enter .32s ease both'}}>
+            <div style={{height:'100%', background:'#0b0805', color:'#f2f1ee', display:'flex', flexDirection:'column', padding:'70px 28px 30px', position:'relative', overflow:'hidden', animation:'lune-enter .32s ease both'}}>
               <Starfield/>
               <div style={{position:'relative', flex:1}}>
                 <img src={IMG('lune-rocket-white.png')} alt="" style={{width:60, height:60, objectFit:'contain', display:'block', marginBottom:28, filter:'drop-shadow(0 0 40px rgba(170,130,90,0.55))', animation:'lune-pop .5s ease both'}}/>
@@ -1401,7 +1539,7 @@ class App extends React.Component {
             const trackHeadline = s.trackStep>=2 ? 'Ready to collect' : (s.trackStep===1 ? 'Preparing your order' : 'Order confirmed');
             const trackEta = s.trackStep>=2 ? 'At the counter now' : 'Ready in about 10 minutes';
             return (
-            <div style={{height:792, background:'#0b0805', color:'#f2f1ee', display:'flex', flexDirection:'column', padding:'64px 28px 30px', position:'relative', overflow:'hidden', animation:'lune-enter .32s ease both'}}>
+            <div style={{height:'100%', background:'#0b0805', color:'#f2f1ee', display:'flex', flexDirection:'column', padding:'64px 28px 30px', position:'relative', overflow:'hidden', animation:'lune-enter .32s ease both'}}>
               <Starfield/>
               <div style={{position:'relative', flex:1}}>
                 <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:11, letterSpacing:'0.16em', color:'#9a8f80'}}>ORDER {s.orderNo}</div>
@@ -1435,7 +1573,7 @@ class App extends React.Component {
             const rewardPct = Math.min(100, Math.round(s.rewards/rewardTarget*100));
             const rewardNextLabel = s.rewards>=rewardTarget ? 'Free coffee ready' : ('$'+(rewardTarget-s.rewards).toFixed(2)+' to go');
             return (
-            <div className="lune-scroll" style={{height:792, overflowY:'auto', background:'#0b0805', color:'#f2ede6', position:'relative', animation:'lune-enter .32s ease both'}}>
+            <div className="lune-scroll" style={{height:'100%', overflowY:'auto', background:'#0b0805', color:'#f2ede6', position:'relative', animation:'lune-enter .32s ease both'}}>
               <Starfield/>
               <div style={{position:'relative', padding:'52px 26px 30px'}}>
                 <div className="clickable link-muted" onClick={()=>this.goBack()} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'#9a8f80', cursor:'pointer'}}>‹ BACK</div>
@@ -1479,7 +1617,7 @@ class App extends React.Component {
               { label:'DIETARY', value:'None set' },
             ];
             return (
-            <div className="lune-scroll" style={{height:792, overflowY:'auto', background:'#0b0805', color:'#f2ede6', position:'relative', animation:'lune-enter .32s ease both'}}>
+            <div className="lune-scroll" style={{height:'100%', overflowY:'auto', background:'#0b0805', color:'#f2ede6', position:'relative', animation:'lune-enter .32s ease both'}}>
               <Starfield/>
               <div style={{position:'relative', padding:'52px 26px 34px'}}>
                 <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
@@ -1548,7 +1686,7 @@ class App extends React.Component {
               return (r.qty||1)+'× '+nm+milkTxt;
             }).join(', ');
             return (
-            <div className="lune-scroll" style={{height:792, overflowY:'auto', background:'#0b0805', color:'#f2ede6', position:'relative', animation:'lune-enter .32s ease both'}}>
+            <div className="lune-scroll" style={{height:'100%', overflowY:'auto', background:'#0b0805', color:'#f2ede6', position:'relative', animation:'lune-enter .32s ease both'}}>
               <Starfield/>
               <div style={{position:'relative', padding:'52px 26px 34px'}}>
                 <div className="clickable link-muted" onClick={()=>this.goBack()} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'#9a8f80', cursor:'pointer'}}>‹ BACK</div>
@@ -1585,7 +1723,7 @@ class App extends React.Component {
             const favIds = Object.keys(s.fav).filter(id=>s.fav[id]);
             const favItems = favIds.map(id=>this._findItem(id)).filter(Boolean);
             return (
-            <div className="lune-scroll" style={{height:792, overflowY:'auto', background:'#0b0805', color:'#f2ede6', position:'relative', animation:'lune-enter .32s ease both'}}>
+            <div className="lune-scroll" style={{height:'100%', overflowY:'auto', background:'#0b0805', color:'#f2ede6', position:'relative', animation:'lune-enter .32s ease both'}}>
               <Starfield/>
               <div style={{position:'relative', padding:'52px 26px 34px'}}>
                 <div className="clickable link-muted" onClick={()=>this.goBack()} style={{fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'#9a8f80', cursor:'pointer'}}>‹ BACK</div>
@@ -1643,6 +1781,7 @@ class App extends React.Component {
             </div>
           }
 
+        </div>
         </div>
       </div>
     );
