@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Lune — Croissanterie</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
@@ -14,10 +14,10 @@
   * { box-sizing: border-box; }
   html, body, #root { height: 100%; margin: 0; }
   body { background: #e7e4dd; font-family: 'DM Sans', system-ui, sans-serif; -webkit-font-smoothing: antialiased; overflow: hidden; }
-  a { color: oklch(0.47 0.075 55); } a:hover { color:#141414; }
+  a { color: oklch(0.47 0.075 55); }
   .lune-scroll::-webkit-scrollbar { display:none; }
-  .lune-scroll { scrollbar-width:none; }
-  .clickable { cursor:pointer; transition: transform .32s cubic-bezier(.34,1.56,.64,1), background .18s ease, color .18s ease, border-color .18s ease, opacity .18s ease, box-shadow .18s ease, filter .18s ease; }
+  .lune-scroll { scrollbar-width:none; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
+  .clickable { cursor:pointer; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; touch-action:manipulation; transition: transform .32s cubic-bezier(.34,1.56,.64,1), background .18s ease, color .18s ease, border-color .18s ease, opacity .18s ease, box-shadow .18s ease, filter .18s ease; }
   .clickable:active { transform: scale(0.96); transition-duration: .08s; }
   .clickable:focus-visible { outline: 2px solid rgba(224,201,168,0.9); outline-offset: 2px; }
   .magnetic-btn { transition: transform .25s cubic-bezier(.34,1.56,.64,1), background .18s ease, color .18s ease, border-color .18s ease, opacity .18s ease, box-shadow .18s ease, filter .18s ease; }
@@ -44,43 +44,44 @@
   @keyframes lune-launch-text { 0% { opacity:0; transform:translateY(6px); } 14% { opacity:1; transform:none; } 60% { opacity:1; } 82% { opacity:0; } 100% { opacity:0; } }
   @keyframes lune-fly { 0% { transform:translate(0,0) rotate(0deg); } 25% { transform:translate(3px,-5px) rotate(1deg); } 50% { transform:translate(-2px,4px) rotate(-1.2deg); } 75% { transform:translate(-4px,-3px) rotate(0.6deg); } 100% { transform:translate(0,0) rotate(0deg); } }
 
-  .link-muted:hover{color:#f2ede6}
-  .link-accent:hover{color:#141414 !important}
-  .btn-dark:hover{filter:brightness(1.25)}
-  .btn-accent:hover{filter:brightness(1.15)}
-  .btn-outline:hover{background:rgba(255,255,255,0.08)}
-  .icon-btn-dark:hover{background:rgba(255,255,255,0.14)}
-  .icon-btn-glass:hover{background:rgba(255,255,255,0.18)}
-  .avatar-btn:hover{filter:brightness(1.2)}
-  .rewards-pill:hover{background:rgba(255,255,255,0.13)}
-  .store-card-nearest:hover{box-shadow:0 14px 30px -18px rgba(20,20,25,0.6); transform:translateY(-2px)}
-  .store-card:hover{border-color:#141414 !important; transform:translateY(-2px)}
-  .menu-title:hover{color:oklch(0.47 0.075 55) !important}
-  .pickup-card:hover{border-color:#141414 !important; box-shadow:0 8px 20px -16px rgba(20,20,25,0.6)}
-  .cat-tab:hover{color:#141414 !important}
-  .plus-btn-sm:hover{background:oklch(0.47 0.075 55) !important; transform:scale(1.08)}
-  .feature-add-btn:hover{background:rgba(255,255,255,0.28)}
-  .item-row-main:hover{transform:translateX(3px)}
-  .pickup-option:hover{border-color:#141414 !important}
-  .chip-option:hover{border-color:#9a8f80 !important}
-  .glass-chip:hover{border-color:rgba(255,255,255,0.5) !important}
-  .qty-btn:hover{color:#fff}
-  .btn-add-bag:hover{filter:brightness(1.06); transform:translateY(-1px)}
-  .qty-box:hover{border-color:#141414 !important}
-  .rewards-row:hover{border-color:#141414 !important}
-  .rewards-signup-card:hover{border-color:#141414 !important; background:#f7efe0 !important}
   .menu-grid-card .lune-photo, .menu-grid-card .grid-thumb-fallback{transition: transform .5s cubic-bezier(.34,1.56,.64,1);}
   .menu-grid-card:hover .lune-photo, .menu-grid-card:hover .grid-thumb-fallback{transform: scale(1.06);}
   @media (hover:hover) and (pointer:fine) {
+    a:hover{color:#141414}
+    .link-muted:hover{color:#f2ede6}
+    .link-accent:hover{color:#141414 !important}
+    .btn-dark:hover{filter:brightness(1.25)}
+    .btn-accent:hover{filter:brightness(1.15)}
+    .btn-outline:hover{background:rgba(255,255,255,0.08)}
+    .icon-btn-dark:hover{background:rgba(255,255,255,0.14)}
+    .icon-btn-glass:hover{background:rgba(255,255,255,0.18)}
+    .avatar-btn:hover{filter:brightness(1.2)}
+    .rewards-pill:hover{background:rgba(255,255,255,0.13)}
+    .store-card-nearest:hover{box-shadow:0 14px 30px -18px rgba(20,20,25,0.6); transform:translateY(-2px)}
+    .store-card:hover{border-color:#141414 !important; transform:translateY(-2px)}
+    .menu-title:hover{color:oklch(0.47 0.075 55) !important}
+    .pickup-card:hover{border-color:#141414 !important; box-shadow:0 8px 20px -16px rgba(20,20,25,0.6)}
+    .cat-tab:hover{color:#141414 !important}
+    .plus-btn-sm:hover{background:oklch(0.47 0.075 55) !important; transform:scale(1.08)}
+    .feature-add-btn:hover{background:rgba(255,255,255,0.28)}
+    .item-row-main:hover{transform:translateX(3px)}
+    .pickup-option:hover{border-color:#141414 !important}
+    .chip-option:hover{border-color:#9a8f80 !important}
+    .glass-chip:hover{border-color:rgba(255,255,255,0.5) !important}
+    .qty-btn:hover{color:#fff}
+    .btn-add-bag:hover{filter:brightness(1.06); transform:translateY(-1px)}
+    .qty-box:hover{border-color:#141414 !important}
+    .rewards-row:hover{border-color:#141414 !important}
+    .rewards-signup-card:hover{border-color:#141414 !important; background:#f7efe0 !important}
     .view-toggle-btn:hover{color:#141414 !important}
     .menu-grid-card{transition:transform .28s cubic-bezier(.34,1.56,.64,1);}
     .menu-grid-card:hover{transform:translateY(-4px);}
     .feature-card:hover{box-shadow:0 28px 54px -26px rgba(20,20,25,0.65) !important;}
+    .qr-row:hover{border-color:rgba(224,201,168,0.6) !important; background:rgba(255,255,255,0.08) !important}
+    .rewards-card:hover{border-color:rgba(224,201,168,0.6) !important}
+    .keypad-key:hover{background:rgba(255,255,255,0.14)}
+    .btn-phone-submit:hover{filter:brightness(1.1)}
   }
-  .qr-row:hover{border-color:rgba(224,201,168,0.6) !important; background:rgba(255,255,255,0.08) !important}
-  .rewards-card:hover{border-color:rgba(224,201,168,0.6) !important}
-  .keypad-key:hover{background:rgba(255,255,255,0.14)}
-  .btn-phone-submit:hover{filter:brightness(1.1)}
 
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
@@ -778,7 +779,7 @@ class App extends React.Component {
                 <p style={{fontSize:13, lineHeight:1.55, color:'#c3b8ab', margin:0}}>We'll send a little something on your special day.</p>
                 <div style={{display:'flex', gap:8, marginTop:28}}>
                   <input value={s.dobDay} onChange={(e)=>this.setDobDay(e)} placeholder="DD" inputMode="numeric" style={{flex:'0.7 1 0%', width:0, minWidth:0, textAlign:'center', border:'1.5px solid rgba(255,255,255,0.16)', borderRadius:12, padding:'16px 4px', fontFamily:"'JetBrains Mono',monospace", fontSize:16, color:'#f2ede6', background:'rgba(255,255,255,0.06)', outline:'none'}}/>
-                  <select value={s.dobMonth} onChange={(e)=>this.setDobMonth(e)} colorScheme="dark" style={{flex:'2 1 0%', width:0, minWidth:0, textAlign:'center', textAlignLast:'center', border:'1.5px solid rgba(255,255,255,0.16)', borderRadius:12, padding:'16px 4px', fontFamily:"'JetBrains Mono',monospace", fontSize:14, color: s.dobMonth ? '#f2ede6' : '#8a8375', background:'rgba(255,255,255,0.06)', outline:'none'}}>
+                  <select value={s.dobMonth} onChange={(e)=>this.setDobMonth(e)} colorScheme="dark" style={{flex:'2 1 0%', width:0, minWidth:0, textAlign:'center', textAlignLast:'center', border:'1.5px solid rgba(255,255,255,0.16)', borderRadius:12, padding:'16px 4px', fontFamily:"'JetBrains Mono',monospace", fontSize:16, color: s.dobMonth ? '#f2ede6' : '#8a8375', background:'rgba(255,255,255,0.06)', outline:'none'}}>
                     <option value="" disabled style={{color:'#141414'}}>Month</option>
                     {MONTHS.map((m,i)=>(
                       <option key={m} value={String(i+1).padStart(2,'0')} style={{color:'#141414'}}>{m}</option>
@@ -1009,11 +1010,11 @@ class App extends React.Component {
                   </React.Fragment>
                 }
                 {!showFeature &&
-                  <div style={{display:'flex', justifyContent:'flex-end', alignItems:'center', gap:6, margin:'12px 0 4px'}}>
-                    <span className="clickable view-toggle-btn" onClick={()=>this.setState({menuView:'list'})} style={{width:28, height:28, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', background: s.menuView==='list' ? '#141414' : 'transparent', color: s.menuView==='list' ? '#f4f4f2' : '#a8a297', cursor:'pointer'}}>
+                  <div style={{display:'flex', justifyContent:'flex-end', alignItems:'center', gap:8, margin:'12px 0 4px'}}>
+                    <span className="clickable view-toggle-btn" onClick={()=>this.setState({menuView:'list'})} style={{width:34, height:34, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', background: s.menuView==='list' ? '#141414' : 'transparent', color: s.menuView==='list' ? '#f4f4f2' : '#a8a297', cursor:'pointer'}}>
                       <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><rect x="1.5" y="2" width="3" height="3" rx="0.6"></rect><path d="M6.5 3.5h8"></path><rect x="1.5" y="6.5" width="3" height="3" rx="0.6"></rect><path d="M6.5 8h8"></path><rect x="1.5" y="11" width="3" height="3" rx="0.6"></rect><path d="M6.5 12.5h8"></path></svg>
                     </span>
-                    <span className="clickable view-toggle-btn" onClick={()=>this.setState({menuView:'grid'})} style={{width:28, height:28, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', background: s.menuView==='grid' ? '#141414' : 'transparent', color: s.menuView==='grid' ? '#f4f4f2' : '#a8a297', cursor:'pointer'}}>
+                    <span className="clickable view-toggle-btn" onClick={()=>this.setState({menuView:'grid'})} style={{width:34, height:34, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', background: s.menuView==='grid' ? '#141414' : 'transparent', color: s.menuView==='grid' ? '#f4f4f2' : '#a8a297', cursor:'pointer'}}>
                       <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1"></rect><rect x="9" y="1.5" width="5.5" height="5.5" rx="1"></rect><rect x="1.5" y="9" width="5.5" height="5.5" rx="1"></rect><rect x="9" y="9" width="5.5" height="5.5" rx="1"></rect></svg>
                     </span>
                   </div>
@@ -1041,7 +1042,7 @@ class App extends React.Component {
                       <div className="clickable item-row-main" onClick={row.open} style={{display:'flex', gap:14, alignItems:'center', cursor:'pointer', flex:1}}>
                         <div style={{width:54, height:54, flexShrink:0, borderRadius:12, overflow:'hidden', background:'#efece6', display:'flex', alignItems:'center', justifyContent:'center', position:'relative'}}>
                           {this.thumbEl(row.item)}
-                          <span className="clickable" onClick={(e)=>{ e.stopPropagation(); this.toggleFavId(row.item.id); }} style={{position:'absolute', top:2, right:2, width:20, height:20, borderRadius:'50%', background:'rgba(255,255,255,0.85)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, color: s.fav[row.item.id] ? '#e07a5f' : '#8a8375', animation: s.fav[row.item.id] ? 'lune-heart-pop .4s cubic-bezier(.34,1.56,.64,1) both' : 'none'}}>{s.fav[row.item.id] ? '♥' : '♡'}</span>
+                          <span className="clickable" onClick={(e)=>{ e.stopPropagation(); this.toggleFavId(row.item.id); }} style={{position:'absolute', top:0, right:0, width:26, height:26, borderRadius:'50%', background:'rgba(255,255,255,0.85)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12.5, color: s.fav[row.item.id] ? '#e07a5f' : '#8a8375', animation: s.fav[row.item.id] ? 'lune-heart-pop .4s cubic-bezier(.34,1.56,.64,1) both' : 'none'}}>{s.fav[row.item.id] ? '♥' : '♡'}</span>
                         </div>
                         <div>
                           <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:16}}>{row.name}</div>
@@ -1058,7 +1059,7 @@ class App extends React.Component {
               </div>
               </div>
               {s.cart.length>0 &&
-                <div style={{position:'absolute', left:0, right:0, bottom:0, padding:'14px 24px 26px', background:'linear-gradient(transparent,#f4f4f2 34%)'}}>
+                <div style={{position:'absolute', left:0, right:0, bottom:0, padding:'14px 24px calc(26px + env(safe-area-inset-bottom))', background:'linear-gradient(transparent,#f4f4f2 34%)'}}>
                   <div style={{maxWidth:deskMax, margin:'0 auto'}}>
                   <div key={this.cartCountNum()} className="clickable magnetic-btn btn-dark" onClick={()=>this.go('bag')} onMouseMove={(e)=>this.magnetic(e)} onMouseLeave={(e)=>this.magneticReset(e)} style={{display:'flex', justifyContent:'space-between', alignItems:'center', background:'#141414', color:'#f4f4f2', borderRadius:14, padding:'16px 20px', fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer', animation:'lune-pop .3s cubic-bezier(.34,1.56,.64,1) both'}}>
                     <span>BAG · {this.cartCountNum()} ITEMS</span><span>{money(sub)} →</span>
@@ -1105,7 +1106,7 @@ class App extends React.Component {
                   );})}
                 </div>
               </div>
-              <div style={{padding:'14px 24px 26px'}}>
+              <div style={{padding:'14px 24px calc(26px + env(safe-area-inset-bottom))'}}>
                 <div className="clickable magnetic-btn btn-dark" onClick={()=>this.go('menu')} onMouseMove={(e)=>this.magnetic(e)} onMouseLeave={(e)=>this.magneticReset(e)} style={{textAlign:'center', background:'#141414', color:'#f4f4f2', borderRadius:14, padding:17, fontFamily:"'JetBrains Mono',monospace", fontSize:13, cursor:'pointer'}}>VIEW MENU · {pickupShort} →</div>
               </div>
             </div>
@@ -1212,7 +1213,7 @@ class App extends React.Component {
                 </div>
               </div>
 
-              <div className="lune-scroll" style={{position:'absolute', left:0, right:0, bottom:0, zIndex:9, maxHeight:'60%', overflowY:'auto', padding:'26px 20px 24px', background:'linear-gradient(rgba(15,11,7,0), rgba(15,11,7,0.82) 26%, rgba(15,11,7,0.95))'}}>
+              <div className="lune-scroll" style={{position:'absolute', left:0, right:0, bottom:0, zIndex:9, maxHeight:'60%', overflowY:'auto', padding:'26px 20px calc(24px + env(safe-area-inset-bottom))', background:'linear-gradient(rgba(15,11,7,0), rgba(15,11,7,0.82) 26%, rgba(15,11,7,0.95))'}}>
                 {detailsBody}
               </div>
             </div>
@@ -1227,9 +1228,9 @@ class App extends React.Component {
                   <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:15}}>{line.name}</div>
                   <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'#8a8375', marginTop:3}}>{line.variant}</div>
                   <div style={{display:'flex', alignItems:'center', gap:16, marginTop:10, fontFamily:"'JetBrains Mono',monospace", fontSize:13}}>
-                    <span className="clickable qty-box" onClick={()=>this.changeLine(line.key,-1)} style={{cursor:'pointer', width:26, height:26, border:'1px solid #d7d6d0', borderRadius:7, display:'flex', alignItems:'center', justifyContent:'center'}}>−</span>
+                    <span className="clickable qty-box" onClick={()=>this.changeLine(line.key,-1)} style={{cursor:'pointer', width:34, height:34, border:'1px solid #d7d6d0', borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center'}}>−</span>
                     <span>{line.qty}</span>
-                    <span className="clickable qty-box" onClick={()=>this.changeLine(line.key,1)} style={{cursor:'pointer', width:26, height:26, border:'1px solid #d7d6d0', borderRadius:7, display:'flex', alignItems:'center', justifyContent:'center'}}>+</span>
+                    <span className="clickable qty-box" onClick={()=>this.changeLine(line.key,1)} style={{cursor:'pointer', width:34, height:34, border:'1px solid #d7d6d0', borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center'}}>+</span>
                   </div>
                 </div>
                 <div style={{textAlign:'right'}}>
@@ -1289,7 +1290,7 @@ class App extends React.Component {
                 {goesWell}
                 <div style={{marginTop:22}}>{summary}</div>
               </div>
-              <div style={{padding:'14px 24px 26px'}}>
+              <div style={{padding:'14px 24px calc(26px + env(safe-area-inset-bottom))'}}>
                 {checkoutBtn}
               </div>
             </div>
@@ -1324,7 +1325,7 @@ class App extends React.Component {
                   );})}
                 </div>
                 <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10.5, color:'#a8a297', letterSpacing:'0.1em', margin:'26px 0 12px'}}>NAME FOR PICKUP</div>
-                <input value={s.name} onChange={(e)=>this.setState({ name:e.target.value })} placeholder="Your name" style={{width:'100%', border:'1px solid #e0dfda', borderRadius:10, padding:14, fontFamily:"'JetBrains Mono',monospace", fontSize:14, color:'#141414', background:'#fff', outline:'none'}}/>
+                <input value={s.name} onChange={(e)=>this.setState({ name:e.target.value })} placeholder="Your name" style={{width:'100%', border:'1px solid #e0dfda', borderRadius:10, padding:14, fontFamily:"'JetBrains Mono',monospace", fontSize:16, color:'#141414', background:'#fff', outline:'none'}}/>
                 {isMember ? (
                   <div style={{marginTop:26, border:'1px solid #e0dfda', borderRadius:14, padding:'16px 18px', background:'#fff'}}>
                     <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
@@ -1373,21 +1374,21 @@ class App extends React.Component {
                       </div>
                     }
                     <div>
-                      <input value={s.cardNumber} onChange={(e)=>this.setCardNumber(e)} placeholder="Card number" inputMode="numeric" autoComplete="cc-number" style={{width:'100%', border:'1px solid '+(cardErr.cardNumber?'#c0453a':'#e0dfda'), borderRadius:10, padding:14, fontFamily:"'JetBrains Mono',monospace", fontSize:14, color:'#141414', background:'#fff', outline:'none'}}/>
+                      <input value={s.cardNumber} onChange={(e)=>this.setCardNumber(e)} placeholder="Card number" inputMode="numeric" autoComplete="cc-number" style={{width:'100%', border:'1px solid '+(cardErr.cardNumber?'#c0453a':'#e0dfda'), borderRadius:10, padding:14, fontFamily:"'JetBrains Mono',monospace", fontSize:16, color:'#141414', background:'#fff', outline:'none'}}/>
                       {cardErr.cardNumber && <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, color:'#c0453a', marginTop:5}}>{cardErr.cardNumber}</div>}
                     </div>
                     <div style={{display:'flex', gap:10}}>
                       <div style={{flex:1}}>
-                        <input value={s.cardExpiry} onChange={(e)=>this.setCardExpiry(e)} placeholder="MM/YY" inputMode="numeric" autoComplete="cc-exp" style={{width:'100%', border:'1px solid '+(cardErr.cardExpiry?'#c0453a':'#e0dfda'), borderRadius:10, padding:14, fontFamily:"'JetBrains Mono',monospace", fontSize:14, color:'#141414', background:'#fff', outline:'none'}}/>
+                        <input value={s.cardExpiry} onChange={(e)=>this.setCardExpiry(e)} placeholder="MM/YY" inputMode="numeric" autoComplete="cc-exp" style={{width:'100%', border:'1px solid '+(cardErr.cardExpiry?'#c0453a':'#e0dfda'), borderRadius:10, padding:14, fontFamily:"'JetBrains Mono',monospace", fontSize:16, color:'#141414', background:'#fff', outline:'none'}}/>
                         {cardErr.cardExpiry && <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, color:'#c0453a', marginTop:5}}>{cardErr.cardExpiry}</div>}
                       </div>
                       <div style={{flex:1}}>
-                        <input value={s.cardCvc} onChange={(e)=>this.setCardCvc(e)} placeholder="CVC" inputMode="numeric" autoComplete="cc-csc" style={{width:'100%', border:'1px solid '+(cardErr.cardCvc?'#c0453a':'#e0dfda'), borderRadius:10, padding:14, fontFamily:"'JetBrains Mono',monospace", fontSize:14, color:'#141414', background:'#fff', outline:'none'}}/>
+                        <input value={s.cardCvc} onChange={(e)=>this.setCardCvc(e)} placeholder="CVC" inputMode="numeric" autoComplete="cc-csc" style={{width:'100%', border:'1px solid '+(cardErr.cardCvc?'#c0453a':'#e0dfda'), borderRadius:10, padding:14, fontFamily:"'JetBrains Mono',monospace", fontSize:16, color:'#141414', background:'#fff', outline:'none'}}/>
                         {cardErr.cardCvc && <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, color:'#c0453a', marginTop:5}}>{cardErr.cardCvc}</div>}
                       </div>
                     </div>
                     <div>
-                      <input value={s.cardName} onChange={(e)=>this.setCardName(e)} placeholder="Name on card" autoComplete="cc-name" style={{width:'100%', border:'1px solid '+(cardErr.cardName?'#c0453a':'#e0dfda'), borderRadius:10, padding:14, fontFamily:"'JetBrains Mono',monospace", fontSize:14, color:'#141414', background:'#fff', outline:'none'}}/>
+                      <input value={s.cardName} onChange={(e)=>this.setCardName(e)} placeholder="Name on card" autoComplete="cc-name" style={{width:'100%', border:'1px solid '+(cardErr.cardName?'#c0453a':'#e0dfda'), borderRadius:10, padding:14, fontFamily:"'JetBrains Mono',monospace", fontSize:16, color:'#141414', background:'#fff', outline:'none'}}/>
                       {cardErr.cardName && <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, color:'#c0453a', marginTop:5}}>{cardErr.cardName}</div>}
                     </div>
                     <div className="clickable" onClick={()=>this.toggleSaveCard()} style={{display:'flex', alignItems:'center', gap:10, cursor:'pointer', marginTop:2}}>
@@ -1460,7 +1461,7 @@ class App extends React.Component {
                 {checkoutForm}
                 {orderSummary}
               </div>
-              <div style={{padding:'14px 24px 26px'}}>
+              <div style={{padding:'14px 24px calc(26px + env(safe-area-inset-bottom))'}}>
                 {placeOrderBtn}
               </div>
             </div>
